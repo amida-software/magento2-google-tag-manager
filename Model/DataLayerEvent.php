@@ -14,7 +14,7 @@ class DataLayerEvent
     const PRODUCT_IMPRESSION_EVENT = 'productImpression';
     const PRODUCT_DETAIL_EVENT = 'productDetail';
     const REFUND_EVENT = 'refund';
-    const PRODUCT_PAGE_EVENT = 'productPage';
+    const PRODUCT_PAGE_EVENT = 'view_item';
     const CHECKOUT_PAGE_EVENT = 'checkoutPage';
     const CATEGORY_PAGE_EVENT = 'categoryPage';
     const CART_PAGE_EVENT = 'cartPage';

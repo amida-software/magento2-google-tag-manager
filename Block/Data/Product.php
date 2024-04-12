@@ -15,6 +15,8 @@ use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\ProductData\ProductProvider;
 use MagePal\GoogleTagManager\Helper\Product as ProductHelper;
 use MagePal\GoogleTagManager\Model\DataLayerEvent;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Directory\Model\CurrencyFactory;
 
 class Product extends AbstractProduct
 {
@@ -27,6 +29,16 @@ class Product extends AbstractProduct
     /**
      * @var ProductHelper
      */
+
+    /**
+     * @var CurrencyFactory
+     */
+    protected $currencyFactory;
+    /**
+     * @var StoreManagerInterface\
+     */
+    protected $storeManager;
+
     private $productHelper;
     /**
      * @var ProductProvider
@@ -43,12 +55,16 @@ class Product extends AbstractProduct
         Context $context,
         ProductHelper $productHelper,
         ProductProvider $productProvider,
+        StoreManagerInterface $storeManager,
+        CurrencyFactory $currencyFactory,
         array $data = []
     ) {
         $this->catalogHelper = $context->getCatalogHelper();
         parent::__construct($context, $data);
         $this->productHelper = $productHelper;
         $this->productProvider = $productProvider;
+        $this->storeManager = $storeManager;
+        $this->currencyFactory = $currencyFactory;
     }
 
     /**
@@ -63,27 +79,29 @@ class Product extends AbstractProduct
 
         if ($product = $this->getProduct()) {
             $productData = [
-                'id' => $product->getId(),
-                'sku' => $product->getSku(),
-                'parent_sku' => $product->getData('sku'),
-                'product_type' => $product->getTypeId(),
-                'name' => $product->getName(),
+                'item_name' => $product->getName(),
+                'item_id' => $product->getSku(),
                 'price' => $this->productHelper->getProductPrice($product),
-                'attribute_set_id' => $product->getAttributeSetId(),
-                'path' => implode(" > ", $this->getBreadCrumbPath()),
-                'category' => $this->getProductCategoryName(),
-                'image_url' => $this->productHelper->getImageUrl($product)
+                'currency' => $this->getCurrencyName(),
+                'item_brand' => $product->getAttributeText('manufacturer'),
+                'item_category' => $this->getProductCategoryName(),
+                'item_variant' => $product()->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product()->getAttributeText('color')
             ];
 
             $productData = $this->productProvider->setProduct($product)->setProductData($productData)->getData();
 
             $data = [
-                'event' => DataLayerEvent::PRODUCT_PAGE_EVENT,
-                'product' => $productData
+                'event' => DataLayerEvent::GA4_VIEW_ITEM,
+                'ecommerce' => [
+                    'value' => $this->productHelper->getProductPrice($product),
+                    'currency' => $this->getCurrencyName(),
+                    'items' => $productData
+                ],
+
             ];
 
             $tm->addVariable('list', 'detail');
-            $tm->addCustomDataLayerByEvent(DataLayerEvent::PRODUCT_PAGE_EVENT, $data);
+            $tm->addCustomDataLayerByEvent(DataLayerEvent::GA4_VIEW_ITEM, $data);
         }
 
         return $this;
@@ -130,5 +148,14 @@ class Product extends AbstractProduct
         }
 
         return $titleArray;
+    }
+
+    protected function getCurrencyName()
+    {
+        $store = $this->storeManager->getStore();
+        $currencyCode = $store->getCurrentCurrencyCode();
+        $currency = $this->currencyFactory->create()->load($currencyCode);
+
+        return $currency->getCurrencyName();
     }
 }
