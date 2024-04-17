@@ -63,6 +63,12 @@
                         <field id="*/*/active">1</field>
                     </depends>
                 </field>
+                <field id="enable_gtm_noscript" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Google Tag Manager NoScript</label>
+                    <comment>Display GTM NoScript block immediately after the opening body tag.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <default>0</default>
+                </field>
                 <field id="item_variant_layer" translate="label" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Add item variant to data layer?</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
