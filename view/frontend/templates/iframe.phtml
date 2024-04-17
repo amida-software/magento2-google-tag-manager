@@ -9,7 +9,7 @@
 ?>
 
 <!-- Google Tag Manager by MagePal -->
-<?php if (!$block->isAdvancedSettingsEnabled()): ?>
+<?php if (!$block->isAdvancedSettingsEnabled() && $block->isGtmNoscriptEnable()): ?>
 <noscript><iframe src="<?= '/' . '/' ?>www.googletagmanager.com/ns.html?id=<?= /* @noEscape */ $block->getEmbeddedAccountId() ?>"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <?php else: ?>

@@ -90,4 +90,9 @@ class GtmCode extends Template
     {
         return $this->_gtmHelper->getAdvancedSettingsIframeCode($store_id);
     }
+
+    public function isGtmNoscriptEnable($store_id = null)
+    {
+        return $this->_gtmHelper->isGtmNoscriptEnable($store_id);
+    }
 }

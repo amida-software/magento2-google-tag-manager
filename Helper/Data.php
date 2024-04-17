@@ -36,6 +36,11 @@ class Data extends AbstractHelper
     const XML_PATH_COOKIE_RESTRICTION = 'web/cookie/cookie_restriction';
 
     /**
+     * Path to configuration, check is enable gtm noscript
+     */
+    const XML_PATH_ENABLE_GTM_Noscript = 'googletagmanager/general/enable_gtm_noscript';
+
+    /**
      * @var string
      */
     protected $_dataLayerName = 'dataLayer';
@@ -323,5 +328,10 @@ class Data extends AbstractHelper
         }
 
         return $this->formatPrice($price);
+    }
+
+    public function isGtmNoscriptEnable($store_id = null)
+    {
+        return $this->scopeConfig->getValue(self::XML_PATH_ENABLE_GTM_Noscript, ScopeInterface::SCOPE_STORE, $store_id);
     }
 }
