@@ -16,6 +16,7 @@ use Magento\Quote\Model\Quote;
 use MagePal\GoogleTagManager\DataLayer\QuoteData\QuoteItemProvider;
 use MagePal\GoogleTagManager\DataLayer\QuoteData\QuoteProvider;
 use MagePal\GoogleTagManager\Helper\DataLayerItem as dataLayerItemHelper;
+use Magento\Store\Model\StoreManagerInterface;
 
 class Cart extends DataObject
 {
@@ -48,6 +49,11 @@ class Cart extends DataObject
     protected $quoteItemProvider;
 
     /**
+     * @var StoreManagerInterface
+     */
+    protected $storeManager;
+
+    /**
      * Cart constructor.
      * @param CheckoutSession $checkoutSession
      * @param dataLayerItemHelper $dataLayerItemHelper
@@ -62,6 +68,7 @@ class Cart extends DataObject
         Escaper $escaper,
         QuoteProvider $quoteProvider,
         QuoteItemProvider $quoteItemProvider,
+        StoreManagerInterface $storeManager,
         array $data = []
     ) {
         $this->checkoutSession = $checkoutSession;
@@ -69,6 +76,7 @@ class Cart extends DataObject
         $this->_escaper = $escaper;
         $this->quoteProvider = $quoteProvider;
         $this->quoteItemProvider = $quoteItemProvider;
+        $this->storeManager = $storeManager;
         parent::__construct($data);
     }
 
