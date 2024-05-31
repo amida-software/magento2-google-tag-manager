@@ -21,6 +21,7 @@ use MagePal\GoogleTagManager\DataLayer\OrderData\OrderItemProvider;
 use MagePal\GoogleTagManager\DataLayer\OrderData\OrderProvider;
 use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
 use MagePal\GoogleTagManager\Helper\DataLayerItem;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * @method $this setOrderIds($orderIds)
@@ -63,6 +64,8 @@ class Order extends DataObject
 
     protected $dataLayerItemHelper;
 
+    protected $storeManager;
+
     /**
      * Order constructor.
      * @param CollectionFactoryInterface $salesOrderCollection
@@ -80,6 +83,7 @@ class Order extends DataObject
         OrderProvider $orderProvider,
         OrderItemProvider $orderItemProvider,
         DataLayerItem  $dataLayerItemHelper,
+        StoreManagerInterface $storeManager,
         array $data = []
     ) {
         parent::__construct($data);
@@ -89,6 +93,7 @@ class Order extends DataObject
         $this->orderProvider = $orderProvider;
         $this->orderItemProvider = $orderItemProvider;
         $this->dataLayerItemHelper = $dataLayerItemHelper;
+        $this->storeManager = $storeManager;
     }
 
     /**
