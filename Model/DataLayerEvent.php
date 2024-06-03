@@ -17,7 +17,7 @@ class DataLayerEvent
     const PRODUCT_PAGE_EVENT = 'view_item';
     const CHECKOUT_PAGE_EVENT = 'begin_checkout';
     const CATEGORY_PAGE_EVENT = 'categoryPage';
-    const CART_PAGE_EVENT = 'cartPage';
+    const CART_PAGE_EVENT = 'view_cart';
     const PURCHASE_EVENT = 'purchase';
     const ORDER_SUCCESS_PAGE_EVENT = 'orderSuccessPage';
     const ALL_PAGE_EVENT = 'allPage';

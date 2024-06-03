@@ -10,6 +10,7 @@
     <body>
         <referenceBlock name="magepal_gtm_datalayer">
             <block class="MagePal\GoogleTagManager\Block\Data\Product" name="magepal_gtm_block_product"/>
+            <block class="MagePal\GoogleTagManager\Block\Data\Cart" name="magepal_gtm_block_cart"/>
         </referenceBlock>
     </body>
 </page>

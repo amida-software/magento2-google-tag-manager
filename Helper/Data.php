@@ -12,9 +12,15 @@ use Magento\Catalog\Pricing\Price\FinalPrice;
 use Magento\Catalog\Model\Product\Type;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\App\RequestInterface;
+
 
 class Data extends AbstractHelper
 {
+    const CHECKOUT_PAGE = 'checkout_index_index';
+    const PRODUCT_PAGE = 'catalog_product_view';
+    const CART_PAGE = 'checkout_cart_index';
+
     /**
      * Active flag
      */
@@ -333,5 +339,20 @@ class Data extends AbstractHelper
     public function isGtmNoscriptEnable($store_id = null)
     {
         return $this->scopeConfig->getValue(self::XML_PATH_ENABLE_GTM_Noscript, ScopeInterface::SCOPE_STORE, $store_id);
+    }
+
+    public function isCheckout()
+    {
+        return $this->_request->getFullActionName() == self::CHECKOUT_PAGE;
+    }
+
+    public function isProductPage()
+    {
+        return $this->_request->getFullActionName() == self::PRODUCT_PAGE;
+    }
+
+    public function isCartPage()
+    {
+        return $this->_request->getFullActionName() == self::CART_PAGE;
     }
 }
