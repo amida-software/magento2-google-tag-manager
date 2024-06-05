@@ -196,10 +196,10 @@ class Product extends AbstractProduct
         $logger->info('cart_was_opdated -- ' . $this->session->getCartWasUpdated());
         $logger->info($this->gtmCart->getQuote()->getItemsSummaryQty());
         if ($this->session->getCartWasUpdated() && $this->gtmCart->getQuote()->getItemsSummaryQty()) {
-            $logger->info('TRUE');
-            return true;
+            $logger->info('False');
+            return false;
         }
 
-        return false;
+        return true;
     }
 }
