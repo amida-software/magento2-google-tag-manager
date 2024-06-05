@@ -17,9 +17,22 @@ use MagePal\GoogleTagManager\Helper\Product as ProductHelper;
 use MagePal\GoogleTagManager\Model\DataLayerEvent;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Directory\Model\CurrencyFactory;
+use Magento\Checkout\Model\Session as CheckoutSession;
+use MagePal\GoogleTagManager\Helper\Data as MagepalHelper;
+use MagePal\GoogleTagManager\Model\Cart as GtmCartModel;
 
 class Product extends AbstractProduct
 {
+    /**
+     * @var GtmCartModel
+     */
+    protected $gtmCart;
+
+    /**
+     * @var CheckoutSession
+     */
+    protected $session;
+
     /**
      * Catalog data
      *
@@ -34,10 +47,16 @@ class Product extends AbstractProduct
      * @var CurrencyFactory
      */
     protected $currencyFactory;
+
     /**
      * @var StoreManagerInterface\
      */
     protected $storeManager;
+
+    /**
+     * @var MagepalHelper
+     */
+    protected $magepalHelper;
 
     private $productHelper;
     /**
@@ -57,6 +76,9 @@ class Product extends AbstractProduct
         ProductProvider $productProvider,
         StoreManagerInterface $storeManager,
         CurrencyFactory $currencyFactory,
+        MagepalHelper $magepalHelper,
+        GtmCartModel $gtmCart,
+        CheckoutSession $session,
         array $data = []
     ) {
         $this->catalogHelper = $context->getCatalogHelper();
@@ -65,6 +87,9 @@ class Product extends AbstractProduct
         $this->productProvider = $productProvider;
         $this->storeManager = $storeManager;
         $this->currencyFactory = $currencyFactory;
+        $this->magepalHelper = $magepalHelper;
+        $this->gtmCart = $gtmCart;
+        $this->session = $session;
     }
 
     /**
@@ -74,34 +99,36 @@ class Product extends AbstractProduct
      */
     protected function _prepareLayout()
     {
-        /** @var $tm DataLayer */
-        $tm = $this->getParentBlock();
+        if ($this->canAddEvent()) {
+            /** @var $tm DataLayer */
+            $tm = $this->getParentBlock();
 
-        if ($product = $this->getProduct()) {
-            $productData = [
-                'item_name' => $product->getName(),
-                'item_id' => $product->getSku(),
-                'price' => $this->productHelper->getProductPrice($product),
-                'currency' => $this->getCurrencyName(),
-                'item_brand' => $product->getAttributeText('manufacturer'),
-                'item_category' => $this->getProductCategoryName(),
-                'item_variant' => $product->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product->getAttributeText('color')
-            ];
-
-            $productData = $this->productProvider->setProduct($product)->setProductData($productData)->getData();
-
-            $data = [
-                'event' => DataLayerEvent::GA4_VIEW_ITEM,
-                'ecommerce' => [
-                    'value' => $this->productHelper->getProductPrice($product),
+            if ($product = $this->getProduct()) {
+                $productData = [
+                    'item_name' => $product->getName(),
+                    'item_id' => $product->getSku(),
+                    'price' => $this->productHelper->getProductPrice($product),
                     'currency' => $this->getCurrencyName(),
-                    'items' => $productData
-                ],
+                    'item_brand' => $product->getAttributeText('manufacturer'),
+                    'item_category' => $this->getProductCategoryName(),
+                    'item_variant' => $product->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product->getAttributeText('color')
+                ];
 
-            ];
+                $productData = $this->productProvider->setProduct($product)->setProductData($productData)->getData();
 
-            $tm->addVariable('list', 'detail');
-            $tm->addCustomDataLayerByEvent(DataLayerEvent::GA4_VIEW_ITEM, $data);
+                $data = [
+                    'event' => DataLayerEvent::GA4_VIEW_ITEM,
+                    'ecommerce' => [
+                        'value' => $this->productHelper->getProductPrice($product),
+                        'currency' => $this->getCurrencyName(),
+                        'items' => $productData
+                    ],
+
+                ];
+
+                $tm->addVariable('list', 'detail');
+                $tm->addCustomDataLayerByEvent(DataLayerEvent::GA4_VIEW_ITEM, $data);
+            }
         }
 
         return $this;
@@ -157,5 +184,22 @@ class Product extends AbstractProduct
         $currency = $this->currencyFactory->create()->load($currencyCode);
 
         return $currency->getCurrencyName();
+    }
+
+    private function canAddEvent()
+    {
+        $logger = new \Monolog\Logger('my-logger');
+        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/product.log', \Monolog\Logger::DEBUG);
+        $logger->pushHandler($streamHandler);
+
+
+        $logger->info('cart_was_opdated -- ' . $this->session->getCartWasUpdated());
+        $logger->info($this->gtmCart->getQuote()->getItemsSummaryQty());
+        if ($this->session->getCartWasUpdated() && $this->gtmCart->getQuote()->getItemsSummaryQty()) {
+            $logger->info('TRUE');
+            return true;
+        }
+
+        return false;
     }
 }
