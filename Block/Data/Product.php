@@ -179,24 +179,12 @@ class Product extends AbstractProduct
 
     protected function getCurrencyName()
     {
-        $store = $this->storeManager->getStore();
-        $currencyCode = $store->getCurrentCurrencyCode();
-        $currency = $this->currencyFactory->create()->load($currencyCode);
-
-        return $currency->getCurrencyName();
+        return $this->storeManager->getStore()->getCurrentCurrencyCode();
     }
 
     private function canAddEvent()
     {
-        $logger = new \Monolog\Logger('my-logger');
-        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/product.log', \Monolog\Logger::DEBUG);
-        $logger->pushHandler($streamHandler);
-
-
-        $logger->info('cart_was_opdated -- ' . $this->session->getCartWasUpdated());
-        $logger->info($this->gtmCart->getQuote()->getItemsSummaryQty());
         if ($this->session->getCartWasUpdated() && $this->gtmCart->getQuote()->getItemsSummaryQty()) {
-            $logger->info('False');
             return false;
         }
 
