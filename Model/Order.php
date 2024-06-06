@@ -22,6 +22,7 @@ use MagePal\GoogleTagManager\DataLayer\OrderData\OrderProvider;
 use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
 use MagePal\GoogleTagManager\Helper\DataLayerItem;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\Response\RedirectInterface;
 
 /**
  * @method $this setOrderIds($orderIds)
@@ -29,7 +30,10 @@ use Magento\Store\Model\StoreManagerInterface;
  */
 class Order extends DataObject
 {
-
+    /**
+     * @var RedirectInterface
+     */
+    public $redirect;
     /**
      * @var gtmHelper
      */
@@ -84,6 +88,7 @@ class Order extends DataObject
         OrderItemProvider $orderItemProvider,
         DataLayerItem  $dataLayerItemHelper,
         StoreManagerInterface $storeManager,
+        RedirectInterface $redirect,
         array $data = []
     ) {
         parent::__construct($data);
@@ -94,6 +99,7 @@ class Order extends DataObject
         $this->orderItemProvider = $orderItemProvider;
         $this->dataLayerItemHelper = $dataLayerItemHelper;
         $this->storeManager = $storeManager;
+        $this->redirect = $redirect;
     }
 
     /**
@@ -127,6 +133,11 @@ class Order extends DataObject
         }
 
         return $result;
+    }
+
+    public function getRefererUrl()
+    {
+        return $this->redirect->getRefererUrl();
     }
 
     public function getTransactionDetail($order)
