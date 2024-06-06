@@ -12,6 +12,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
+use Magento\Checkout\Model\Session as CheckoutSession;
 
 /**
  * @method setBlockName($name)
@@ -29,6 +30,10 @@ use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
  */
 class DataLayerAbstract extends Template
 {
+    /**
+     * @var CheckoutSession
+     */
+    protected $session;
 
     /**
      * @var GtmHelper
@@ -65,9 +70,11 @@ class DataLayerAbstract extends Template
     public function __construct(
         Context $context,
         GtmHelper $gtmHelper,
+        CheckoutSession $session,
         array $data = []
     ) {
         $this->_gtmHelper = $gtmHelper;
+        $this->session = $session;
         parent::__construct($context, $data);
         $this->_init();
     }
@@ -290,5 +297,17 @@ class DataLayerAbstract extends Template
     public function getCurrentWebsiteId()
     {
         return $this->_storeManager->getWebsite()->getId();
+    }
+
+    /**
+     * Clear dataLayer session
+     *
+     * @return void
+     */
+    public function clearDataLayerSessionInfo()
+    {
+        $this->session->unsLastAddedProductId();
+        $this->session->unsLastAddedProductQty();
+        $this->session->unsCartDataLayer();
     }
 }

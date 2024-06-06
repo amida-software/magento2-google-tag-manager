@@ -58,7 +58,7 @@ class Product extends AbstractProduct
      */
     protected $magepalHelper;
 
-    private $productHelper;
+    protected $productHelper;
     /**
      * @var ProductProvider
      */
