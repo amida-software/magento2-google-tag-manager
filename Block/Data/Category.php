@@ -97,7 +97,7 @@ class Category extends Template
 
         if ($category) {
 
-            $items = $this->getItemsForCategory();
+            $items = $this->getItemsForCategory($category);
 
             $data = [
                 'event' => DataLayerEvent::CATEGORY_PAGE_EVENT,
@@ -114,7 +114,7 @@ class Category extends Template
         return $this;
     }
 
-    private function getItemsForCategory()
+    private function getItemsForCategory($category)
     {
         $items = [];
 
