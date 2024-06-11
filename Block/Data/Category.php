@@ -117,8 +117,15 @@ class Category extends Template
     private function getItemsForCategory($category)
     {
         $items = [];
+        
+        $currentPage = (int) $this->getRequest()->getParam('p', 1);
+        $pageSize = (int) $this->getRequest()->getParam('limit', $this->listingBlock->getDefaultPerPageValue());
 
-        foreach ($this->listingBlock->getLoadedProductCollection() as $product) {
+        $productCollection = $this->listingBlock->getLoadedProductCollection();
+        $productCollection->setCurPage($currentPage);
+        $productCollection->setPageSize($pageSize);
+
+        foreach ($productCollection as $product) {
             $items[] = [
                 'item_name' => $product->getName(),
                 'item_id' => $product->getSku(),
