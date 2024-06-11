@@ -1,10 +1,4 @@
 <?php
-/**
- * Copyright © MagePal LLC. All rights reserved.
- * See COPYING.txt for license details.
- * http://www.magepal.com | support@magepal.com
- */
-
 namespace MagePal\GoogleTagManager\Block\Data;
 
 use Magento\Catalog\Model\Category as ProductCategory;
@@ -19,36 +13,11 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class Category extends Template
 {
-    /**
-     * Catalog data
-     *
-     * @var Data
-     */
     protected $_catalogData = null;
-
-    /**
-     * Core registry
-     *
-     * @var Registry
-     */
     protected $_coreRegistry = null;
-    /**
-     * @var CategoryProvider
-     */
     private $categoryProvider;
-
-    /**
-     * @var StoreManagerInterface\
-     */
     protected $storeManager;
 
-    /**
-     * @param  Context  $context
-     * @param  Registry  $registry
-     * @param  Data  $catalogData
-     * @param  CategoryProvider  $categoryProvider
-     * @param  array  $data
-     */
     public function __construct(
         Context $context,
         Registry $registry,
@@ -64,11 +33,6 @@ class Category extends Template
         $this->storeManager = $storeManager;
     }
 
-    /**
-     * Retrieve current category model object
-     *
-     * @return \Magento\Catalog\Model\Category
-     */
     public function getCurrentCategory()
     {
         if (!$this->hasData('current_category')) {
@@ -77,18 +41,12 @@ class Category extends Template
         return $this->getData('current_category');
     }
 
-    /**
-     * Add category data to datalayer
-     *
-     * @return $this
-     */
     protected function _prepareLayout()
     {
         $tm = $this->getParentBlock();
         $category = $this->getCurrentCategory();
 
         if ($category) {
-
             $items = $this->getItemsForCategory($category);
 
             $data = [
@@ -109,23 +67,15 @@ class Category extends Template
     private function getItemsForCategory($category)
     {
         $items = [];
+        
+        $dataLayerEvent = $this->getLayout()->getBlock('head.additional')->getData('datalayer_event');
 
-        foreach ($category->getProductCollection() as $product) {
-            $items[] = [
-                'item_name' => $product->getName(),
-                'item_id' => $product->getSku(),
-                'price' => $product->getPrice(),
-                'currency' => $this->getCurrencyName(),
-                'item_brand' => $product->getBrand(),
-                'item_category' => $category->getName(),
-                'item_variant' => $product->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product->getAttributeText('color'),
-                'quantity' => 1
-            ];
+        if (isset($dataLayerEvent['ecommerce']['items'])) {
+            $items = $dataLayerEvent['ecommerce']['items'];
         }
 
         return $items;
     }
-
 
     public function getCategoryPath()
     {
