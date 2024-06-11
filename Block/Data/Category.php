@@ -16,6 +16,7 @@ use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\CategoryData\CategoryProvider;
 use MagePal\GoogleTagManager\Model\DataLayerEvent;
 use Magento\Store\Model\StoreManagerInterface;
+use Amida\Catalog\Block\Product\ListProduct;
 
 class Category extends Template
 {
@@ -43,6 +44,11 @@ class Category extends Template
     protected $storeManager;
 
     /**
+     * @var ListProduct
+     */
+    protected $listingBlock;
+
+    /**
      * @param  Context  $context
      * @param  Registry  $registry
      * @param  Data  $catalogData
@@ -55,6 +61,7 @@ class Category extends Template
         Data $catalogData,
         CategoryProvider $categoryProvider,
         StoreManagerInterface $storeManager,
+        ListProduct $listProduct,
         array $data = []
     ) {
         $this->_catalogData = $catalogData;
@@ -62,6 +69,7 @@ class Category extends Template
         parent::__construct($context, $data);
         $this->categoryProvider = $categoryProvider;
         $this->storeManager = $storeManager;
+        $this->listingBlock = $listProduct;
     }
 
     /**
@@ -89,10 +97,10 @@ class Category extends Template
 
         if ($category) {
 
-            $items = $this->getItemsForCategory($category);
+            $items = $this->getItemsForCategory();
 
             $data = [
-                'event' => 'add_to_wishlist',
+                'event' => DataLayerEvent::CATEGORY_PAGE_EVENT,
                 'ecommerce' => [
                     'currency' => $this->getCurrencyName(),
                     'value' => $this->calculateTotalValue($items),
@@ -100,7 +108,7 @@ class Category extends Template
                 ]
             ];
 
-            $tm->addCustomDataLayerByEvent('add_to_wishlist', $data);
+            $tm->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $data);
         }
 
         return $this;
@@ -110,7 +118,7 @@ class Category extends Template
     {
         $items = [];
 
-        foreach ($category->getProductCollection() as $product) {
+        foreach ($this->listingBlock->getLoadedProductCollection() as $product) {
             $items[] = [
                 'item_name' => $product->getName(),
                 'item_id' => $product->getSku(),
