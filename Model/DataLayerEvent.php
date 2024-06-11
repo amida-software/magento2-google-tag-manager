@@ -16,7 +16,7 @@ class DataLayerEvent
     const REFUND_EVENT = 'refund';
     const PRODUCT_PAGE_EVENT = 'view_item';
     const CHECKOUT_PAGE_EVENT = 'begin_checkout';
-    const CATEGORY_PAGE_EVENT = 'categoryPage';
+    const CATEGORY_PAGE_EVENT = 'view_item_list';
     const CART_PAGE_EVENT = 'view_cart';
     const PURCHASE_EVENT = 'purchase';
     const ORDER_SUCCESS_PAGE_EVENT = 'orderSuccessPage';
@@ -34,4 +34,5 @@ class DataLayerEvent
     const GA4_VIEW_ITEM_LIST = 'view_item_list';
     const GA4_VIEW_ITEM = 'view_item';
     const GA4_VIEW_CART = 'view_cart';
+    const GA4_ADD_TO_WISHLIST_EVENT = 'add_to_wishlist';
 }

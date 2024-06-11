@@ -15,6 +15,7 @@ use Magento\Framework\View\Element\Template\Context;
 use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\CategoryData\CategoryProvider;
 use MagePal\GoogleTagManager\Model\DataLayerEvent;
+use Magento\Store\Model\StoreManagerInterface;
 
 class Category extends Template
 {
@@ -37,6 +38,11 @@ class Category extends Template
     private $categoryProvider;
 
     /**
+     * @var StoreManagerInterface\
+     */
+    protected $storeManager;
+
+    /**
      * @param  Context  $context
      * @param  Registry  $registry
      * @param  Data  $catalogData
@@ -48,12 +54,14 @@ class Category extends Template
         Registry $registry,
         Data $catalogData,
         CategoryProvider $categoryProvider,
+        StoreManagerInterface $storeManager,
         array $data = []
     ) {
         $this->_catalogData = $catalogData;
         $this->_coreRegistry = $registry;
         parent::__construct($context, $data);
         $this->categoryProvider = $categoryProvider;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -76,35 +84,48 @@ class Category extends Template
      */
     protected function _prepareLayout()
     {
-        /** @var $tm DataLayer */
         $tm = $this->getParentBlock();
-
-        /** @var $category ProductCategory */
         $category = $this->getCurrentCategory();
 
         if ($category) {
-            $categoryData = [
-                'id' => $category->getId(),
-                'name' => $category->getName(),
-                'path' => $this->getCategoryPath()
-            ];
 
-            $categoryData = $this->categoryProvider
-                ->setCategory($category)
-                ->setCategoryData($categoryData)
-                ->getData();
+            $items = $this->getItemsForCategory($category);
 
             $data = [
-                'event' => DataLayerEvent::CATEGORY_PAGE_EVENT,
-                'category' => $categoryData
+                'event' => 'add_to_wishlist',
+                'ecommerce' => [
+                    'currency' => $this->getCurrencyName(),
+                    'value' => $this->calculateTotalValue($items),
+                    'items' => $items
+                ]
             ];
 
-            $tm->addVariable('list', 'category');
-            $tm->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $data);
+            $tm->addCustomDataLayerByEvent('add_to_wishlist', $data);
         }
 
         return $this;
     }
+
+    private function getItemsForCategory($category)
+    {
+        $items = [];
+
+        foreach ($category->getProductCollection() as $product) {
+            $items[] = [
+                'item_name' => $product->getName(),
+                'item_id' => $product->getSku(),
+                'price' => $product->getPrice(),
+                'currency' => $this->getCurrencyName(),
+                'item_brand' => $product->getBrand(),
+                'item_category' => $category->getName(),
+                'item_variant' => $product->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product->getAttributeText('color'),
+                'quantity' => 1
+            ];
+        }
+
+        return $items;
+    }
+    
 
     public function getCategoryPath()
     {
@@ -116,5 +137,19 @@ class Category extends Template
         }
 
         return implode(" > ", $titleArray);
+    }
+
+    protected function getCurrencyName()
+    {
+        return $this->storeManager->getStore()->getCurrentCurrencyCode();
+    }
+
+    private function calculateTotalValue($items)
+    {
+        $totalValue = 0;
+        foreach ($items as $item) {
+            $totalValue += $item['price'] * $item['quantity'];
+        }
+        return $totalValue;
     }
 }
