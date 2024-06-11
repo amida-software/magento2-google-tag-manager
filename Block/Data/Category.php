@@ -16,7 +16,6 @@ use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\CategoryData\CategoryProvider;
 use MagePal\GoogleTagManager\Model\DataLayerEvent;
 use Magento\Store\Model\StoreManagerInterface;
-use Amida\Catalog\Block\Product\ListProduct;
 
 class Category extends Template
 {
@@ -44,11 +43,6 @@ class Category extends Template
     protected $storeManager;
 
     /**
-     * @var ListProduct
-     */
-    protected $listingBlock;
-
-    /**
      * @param  Context  $context
      * @param  Registry  $registry
      * @param  Data  $catalogData
@@ -61,7 +55,6 @@ class Category extends Template
         Data $catalogData,
         CategoryProvider $categoryProvider,
         StoreManagerInterface $storeManager,
-        ListProduct $listProduct,
         array $data = []
     ) {
         $this->_catalogData = $catalogData;
@@ -69,7 +62,6 @@ class Category extends Template
         parent::__construct($context, $data);
         $this->categoryProvider = $categoryProvider;
         $this->storeManager = $storeManager;
-        $this->listingBlock = $listProduct;
     }
 
     /**
@@ -117,15 +109,8 @@ class Category extends Template
     private function getItemsForCategory($category)
     {
         $items = [];
-        
-        $currentPage = (int) $this->getRequest()->getParam('p', 1);
-        $pageSize = (int) $this->getRequest()->getParam('limit', $this->listingBlock->getDefaultPerPageValue());
 
-        $productCollection = $this->listingBlock->getLoadedProductCollection();
-        $productCollection->setCurPage($currentPage);
-        $productCollection->setPageSize($pageSize);
-
-        foreach ($productCollection as $product) {
+        foreach ($category->getProductCollection() as $product) {
             $items[] = [
                 'item_name' => $product->getName(),
                 'item_id' => $product->getSku(),
