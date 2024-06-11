@@ -10,6 +10,7 @@ use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\CategoryData\CategoryProvider;
 use MagePal\GoogleTagManager\Model\DataLayerEvent;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Session\SessionManagerInterface;
 
 class Category extends Template
 {
@@ -17,6 +18,7 @@ class Category extends Template
     protected $_coreRegistry = null;
     private $categoryProvider;
     protected $storeManager;
+    protected $session;
 
     public function __construct(
         Context $context,
@@ -24,6 +26,7 @@ class Category extends Template
         Data $catalogData,
         CategoryProvider $categoryProvider,
         StoreManagerInterface $storeManager,
+        SessionManagerInterface $session,
         array $data = []
     ) {
         $this->_catalogData = $catalogData;
@@ -31,6 +34,7 @@ class Category extends Template
         parent::__construct($context, $data);
         $this->categoryProvider = $categoryProvider;
         $this->storeManager = $storeManager;
+        $this->session = $session;
     }
 
     public function getCurrentCategory()
@@ -47,7 +51,7 @@ class Category extends Template
         $category = $this->getCurrentCategory();
 
         if ($category) {
-            $items = $this->getItemsForCategory($category);
+            $items = $this->getItemsForCategory();
 
             $data = [
                 'event' => DataLayerEvent::CATEGORY_PAGE_EVENT,
@@ -64,14 +68,11 @@ class Category extends Template
         return $this;
     }
 
-    private function getItemsForCategory($category)
+    private function getItemsForCategory()
     {
         $items = [];
-        
-        $dataLayerEvent = $this->getLayout()->getBlock('head.additional')->getData('datalayer_event');
-
-        if (isset($dataLayerEvent['ecommerce']['items'])) {
-            $items = $dataLayerEvent['ecommerce']['items'];
+        if ($products = $this->session->getData('data_layer_category_list')) {
+            $items = $products;
         }
 
         return $items;
