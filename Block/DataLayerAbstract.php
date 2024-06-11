@@ -311,6 +311,6 @@ class DataLayerAbstract extends Template
         $this->session->unsLastDeletedProductId();
         $this->session->unsLastDeletedProductQty();
         $this->session->unsCartDataLayer();
-        $this->session->unsLastAddedWishlistProductId();
+        $this->session->unsLastAddedWishlistProduct();
     }
 }

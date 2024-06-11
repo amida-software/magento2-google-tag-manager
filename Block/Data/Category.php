@@ -125,7 +125,7 @@ class Category extends Template
 
         return $items;
     }
-    
+
 
     public function getCategoryPath()
     {
