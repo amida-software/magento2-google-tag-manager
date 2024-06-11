@@ -114,7 +114,7 @@ class Category extends Template
         return $this;
     }
 
-    private function getItemsForCategory($category)
+    private function getItemsForCategory()
     {
         $items = [];
 
