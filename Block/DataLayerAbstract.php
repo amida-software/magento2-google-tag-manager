@@ -13,6 +13,7 @@ use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
 use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Framework\Session\SessionManagerInterface;
 
 /**
  * @method setBlockName($name)
@@ -34,6 +35,8 @@ class DataLayerAbstract extends Template
      * @var CheckoutSession
      */
     protected $session;
+
+    protected $coreSession;
 
     /**
      * @var GtmHelper
@@ -71,10 +74,12 @@ class DataLayerAbstract extends Template
         Context $context,
         GtmHelper $gtmHelper,
         CheckoutSession $session,
+        SessionManagerInterface $coreSession,
         array $data = []
     ) {
         $this->_gtmHelper = $gtmHelper;
         $this->session = $session;
+        $this->coreSession = $coreSession;
         parent::__construct($context, $data);
         $this->_init();
     }
@@ -312,5 +317,6 @@ class DataLayerAbstract extends Template
         $this->session->unsLastDeletedProductQty();
         $this->session->unsCartDataLayer();
         $this->session->unsLastAddedWishlistProduct();
+        $this->coreSession->unsetData('data_layer_category_list');
     }
 }

@@ -9,7 +9,7 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceBlock name="magepal_gtm_datalayer">
-            <block class="MagePal\GoogleTagManager\Block\Data\Category" name="magepal_gtm_block_category_list"/>
+            <block class="Amida\GoogleTagManager\Block\Data\Category" name="magepal_gtm_block_category_list"/>
             <block class="Amida\GoogleTagManager\Block\Data\AddToWishlist" name="magepal_gtm_block_add_to_wishlist"/>
         </referenceBlock>
     </body>
