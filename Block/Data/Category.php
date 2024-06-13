@@ -1,16 +1,13 @@
 <?php
 namespace MagePal\GoogleTagManager\Block\Data;
 
-use Magento\Catalog\Model\Category as ProductCategory;
 use Magento\Catalog\Helper\Data;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\CategoryData\CategoryProvider;
-use MagePal\GoogleTagManager\Model\DataLayerEvent;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\Session\SessionManagerInterface;
 
 class Category extends Template
 {
@@ -18,7 +15,6 @@ class Category extends Template
     protected $_coreRegistry = null;
     private $categoryProvider;
     protected $storeManager;
-    protected $session;
 
     public function __construct(
         Context $context,
@@ -26,7 +22,6 @@ class Category extends Template
         Data $catalogData,
         CategoryProvider $categoryProvider,
         StoreManagerInterface $storeManager,
-        SessionManagerInterface $session,
         array $data = []
     ) {
         $this->_catalogData = $catalogData;
@@ -34,20 +29,14 @@ class Category extends Template
         parent::__construct($context, $data);
         $this->categoryProvider = $categoryProvider;
         $this->storeManager = $storeManager;
-        $this->session = $session;
     }
 
-    public function getCurrentCategory()
+    protected function _toHtml()
     {
-        if (!$this->hasData('current_category')) {
-            $this->setData('current_category', $this->_coreRegistry->registry('current_category'));
-        }
-        return $this->getData('current_category');
-    }
-
-    protected function _prepareLayout()
-    {
-        $tm = $this->getParentBlock();
+        $logger = new \Monolog\Logger('my-logger');
+        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/test123.log', \Monolog\Logger::DEBUG);
+        $logger->pushHandler($streamHandler);
+        $logger->info('TEST');
         $category = $this->getCurrentCategory();
 
         if ($category) {
@@ -62,20 +51,21 @@ class Category extends Template
                 ]
             ];
 
-            $tm->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $data);
+            $parentBlock = $this->getParentBlock();
+            if ($parentBlock) {
+                $parentBlock->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $data);
+            }
         }
 
-        return $this;
+        return parent::_toHtml();
     }
 
-    private function getItemsForCategory()
+    public function getCurrentCategory()
     {
-        $items = [];
-        if ($products = $this->session->getData('data_layer_category_list')) {
-            $items = $products;
+        if (!$this->hasData('current_category')) {
+            $this->setData('current_category', $this->_coreRegistry->registry('current_category'));
         }
-
-        return $items;
+        return $this->getData('current_category');
     }
 
     public function getCategoryPath()
