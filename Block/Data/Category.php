@@ -5,9 +5,10 @@ use Magento\Catalog\Helper\Data;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
-use MagePal\GoogleTagManager\Block\DataLayer;
 use MagePal\GoogleTagManager\DataLayer\CategoryData\CategoryProvider;
+use MagePal\GoogleTagManager\Model\DataLayerEvent;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Session\SessionManagerInterface;
 
 class Category extends Template
 {
@@ -15,6 +16,7 @@ class Category extends Template
     protected $_coreRegistry = null;
     private $categoryProvider;
     protected $storeManager;
+    protected $session;
 
     public function __construct(
         Context $context,
@@ -22,6 +24,7 @@ class Category extends Template
         Data $catalogData,
         CategoryProvider $categoryProvider,
         StoreManagerInterface $storeManager,
+        SessionManagerInterface $session,
         array $data = []
     ) {
         $this->_catalogData = $catalogData;
@@ -29,35 +32,7 @@ class Category extends Template
         parent::__construct($context, $data);
         $this->categoryProvider = $categoryProvider;
         $this->storeManager = $storeManager;
-    }
-
-    protected function _toHtml()
-    {
-        $logger = new \Monolog\Logger('my-logger');
-        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/test123.log', \Monolog\Logger::DEBUG);
-        $logger->pushHandler($streamHandler);
-        $logger->info('TEST');
-        $category = $this->getCurrentCategory();
-
-        if ($category) {
-            $items = $this->getItemsForCategory();
-
-            $data = [
-                'event' => DataLayerEvent::CATEGORY_PAGE_EVENT,
-                'ecommerce' => [
-                    'currency' => $this->getCurrencyName(),
-                    'value' => $this->calculateTotalValue($items),
-                    'items' => $items
-                ]
-            ];
-
-            $parentBlock = $this->getParentBlock();
-            if ($parentBlock) {
-                $parentBlock->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $data);
-            }
-        }
-
-        return parent::_toHtml();
+        $this->session = $session;
     }
 
     public function getCurrentCategory()
@@ -66,6 +41,41 @@ class Category extends Template
             $this->setData('current_category', $this->_coreRegistry->registry('current_category'));
         }
         return $this->getData('current_category');
+    }
+
+    public function updateDataLayer($items, $currency, $totalValue)
+    {
+        $tm = $this->getParentBlock();
+        $category = $this->getCurrentCategory();
+
+        if ($category) {
+            $data = [
+                'event' => DataLayerEvent::CATEGORY_PAGE_EVENT,
+                'ecommerce' => [
+                    'currency' => $currency,
+                    'value' => $totalValue,
+                    'items' => $items
+                ]
+            ];
+
+            $tm->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $data);
+        }
+    }
+
+    protected function _prepareLayout()
+    {
+        return parent::_prepareLayout();
+    }
+
+    private function getItemsForCategory()
+    {
+        $items = [];
+        if ($products = $this->session->getData('data_layer_category_list')) {
+            $items = $products;
+            $this->session->unsetData('data_layer_category_list');
+        }
+
+        return $items;
     }
 
     public function getCategoryPath()
