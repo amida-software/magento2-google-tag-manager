@@ -14,6 +14,7 @@ use Magento\Framework\View\Element\Template\Context;
 use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Customer\Model\Session;
 
 /**
  * @method setBlockName($name)
@@ -64,6 +65,8 @@ class DataLayerAbstract extends Template
      */
     protected $_variables = [];
 
+    protected $customerSession;
+
     /**
      * @param Context $context
      * @param GtmHelper $gtmHelper
@@ -75,11 +78,13 @@ class DataLayerAbstract extends Template
         GtmHelper $gtmHelper,
         CheckoutSession $session,
         SessionManagerInterface $coreSession,
+        CustomerSession $customerSession,
         array $data = []
     ) {
         $this->_gtmHelper = $gtmHelper;
         $this->session = $session;
         $this->coreSession = $coreSession;
+        $this->customerSession = $customerSession;
         parent::__construct($context, $data);
         $this->_init();
     }
@@ -318,5 +323,7 @@ class DataLayerAbstract extends Template
         $this->session->unsCartDataLayer();
         //$this->session->unsLastAddedWishlistProduct();
         $this->coreSession->unsetData('data_layer_category_list');
+        $this->customerSession->unsetData('send_again_login');
+        $this->customerSession->unsetData('send_again_registration');
     }
 }

@@ -35,4 +35,6 @@ class DataLayerEvent
     const GA4_VIEW_ITEM = 'view_item';
     const GA4_VIEW_CART = 'view_cart';
     const GA4_ADD_TO_WISHLIST_EVENT = 'add_to_wishlist';
+    const GA4_RESEND_LOGIN_EVENT = 'login_resend_code';
+    const GA4_REGISTRATION_LOGIN_EVENT = 'registration_resend_code';
 }

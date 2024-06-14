@@ -12,7 +12,9 @@
           <block class="MagePal\GoogleTagManager\Block\GtmCode" name="magepal_gtm_iframe" as="magepal_gtm_iframe" before="-" template="MagePal_GoogleTagManager::iframe.phtml" />
         </referenceContainer>
         <referenceBlock name="head.additional">
-            <block class="MagePal\GoogleTagManager\Block\DataLayer" name="magepal_gtm_datalayer" as="magepal_gtm_datalayer" before="-" template="MagePal_GoogleTagManager::js.phtml" />
+            <block class="MagePal\GoogleTagManager\Block\DataLayer" name="magepal_gtm_datalayer" as="magepal_gtm_datalayer" before="-" template="MagePal_GoogleTagManager::js.phtml"/>
+                <block class="Amida\GoogleTagManager\Block\Data\Login\Resend" name="magepal_gtm_datalayer_login_resend" as="magepal_gtm_datalayer_login_resend" />
+            <block/>
         </referenceBlock>
     </body>
 </page>
