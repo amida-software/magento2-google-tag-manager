@@ -316,6 +316,10 @@ class DataLayerAbstract extends Template
      */
     public function clearDataLayerSessionInfo()
     {
+        $logger = new \Monolog\Logger('my-logger');
+        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/NEWNEW.log', \Monolog\Logger::DEBUG);
+        $logger->pushHandler($streamHandler);
+        $logger->debug(__METHOD__);
         $this->session->unsLastAddedProductId();
         $this->session->unsLastAddedProductQty();
         $this->session->unsLastDeletedProductId();
@@ -325,5 +329,7 @@ class DataLayerAbstract extends Template
         $this->coreSession->unsetData('data_layer_category_list');
         $this->customerSession->unsetData('send_again_login');
         $this->customerSession->unsetData('send_again_registration');
+        $logger->info('send_again_login' . $this->customerSession->getData('send_again_login'));
+        $logger->info('send_again_registration' . $this->customerSession->getData('send_again_registration'));
     }
 }
