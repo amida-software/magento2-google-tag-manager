@@ -14,7 +14,7 @@ use Magento\Framework\View\Element\Template\Context;
 use MagePal\GoogleTagManager\Helper\Data as GtmHelper;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Session\SessionManagerInterface;
-use Magento\Customer\Model\Session;
+use Magento\Customer\Model\Session as CustomerSession;
 
 /**
  * @method setBlockName($name)
