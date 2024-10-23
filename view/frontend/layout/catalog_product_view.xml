@@ -12,6 +12,7 @@
             <block class="MagePal\GoogleTagManager\Block\Data\Product" name="magepal_gtm_block_product"/>
             <block class="MagePal\GoogleTagManager\Block\Data\Cart" name="magepal_gtm_block_cart"/>
             <block class="Amida\GoogleTagManager\Block\Data\AddToCart" name="amida_gtm_block_add_to_cart" />
+            <block class="Amida\GoogleTagManager\Block\Data\RemoveFromCart" name="amida_gtm_block_remove_from_cart" />
             <block class="Amida\GoogleTagManager\Block\Data\AddToWishlist" name="amida_gtm_block_add_to_wishlist" />
         </referenceBlock>
     </body>
