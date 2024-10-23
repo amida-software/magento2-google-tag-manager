@@ -14,7 +14,7 @@ $containerCode = $block->getEmbeddedCode();
 <!-- Google Tag Manager by MagePal -->
 <script type="text/javascript">
     window.<?= /* @noEscape */ $dataLayerName ?> = window.<?= /* @noEscape */ $dataLayerName ?> || [];
-    <?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });
+    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });
 
 <?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
     <?= /* @noEscape */ $block->getDataLayerJs() ?>
