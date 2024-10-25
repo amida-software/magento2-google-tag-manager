@@ -105,13 +105,16 @@ class Product extends AbstractProduct
 
             if ($product = $this->getProduct()) {
                 $productData = [
-                    'item_name' => $product->getName(),
-                    'item_id' => $product->getSku(),
-                    'price' => $this->productHelper->getProductPrice($product),
-                    'currency' => $this->getCurrencyName(),
-                    'item_brand' => $product->getAttributeText('manufacturer'),
-                    'item_category' => $this->getProductCategoryName(),
-                    'item_variant' => $product->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product->getAttributeText('color')
+                    [
+                        'item_name' => $product->getName(),
+                        'item_id' => $product->getSku(),
+                        'price' => $this->productHelper->getProductPrice($product),
+                        'currency' => $this->getCurrencyName(),
+                        'item_brand' => $product->getAttributeText('manufacturer'),
+                        'item_category' => $this->getProductCategoryName(),
+                        'item_variant' => $product->getTypeId() == \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE ? '' : $product->getAttributeText('color'),
+                        'quantity' => 1
+                    ]
                 ];
 
                 $productData = $this->productProvider->setProduct($product)->setProductData($productData)->getData();
