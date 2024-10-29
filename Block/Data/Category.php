@@ -45,6 +45,10 @@ class Category extends Template
 
     public function updateDataLayer($items, $currency, $totalValue)
     {
+        $logger = new \Monolog\Logger('comp');
+        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/dataLayer.log', \Monolog\Logger::DEBUG);
+        $logger->pushHandler($streamHandler);
+        $logger->info(__METHOD__);
         $tm = $this->getParentBlock();
         $category = $this->getCurrentCategory();
 
