@@ -16,7 +16,6 @@
                 <block class="Amida\GoogleTagManager\Block\Data\Login\ResendLogin" name="magepal_gtm_datalayer_login_resend" as="magepal_gtm_datalayer_login_resend" />
                 <block class="Amida\GoogleTagManager\Block\Data\Login\ResendRegistration" name="magepal_gtm_datalayer_registration_resend" as="magepal_gtm_datalayer_registration_resend" />
                 <block class="Amida\GoogleTagManager\Block\Data\Login\Login" name="magepal_gtm_datalayer_login" as="magepal_gtm_datalayer_login" />
-                <block class="Amida\GoogleTagManager\Block\Data\RemoveFromCart" name="amida_gtm_block_remove_from_cart" />
             <block/>
         </referenceBlock>
     </body>
