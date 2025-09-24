@@ -14,9 +14,9 @@
             </argument>
         </arguments>
     </type>
-    <type name="MagePal\GoogleTagManager\Block\DataLayer">
-        <plugin name="amida_gtm_category_event"
-                type="MagePal\GoogleTagManager\Plugin\DataLayerCategoryEvent"
+    <type name="Magento\Catalog\Block\Product\ListProduct">
+        <plugin name="amida_gtm_category_event_after_list"
+                type="MagePal\GoogleTagManager\Plugin\CategoryListEventAfterHtml"
                 sortOrder="10"/>
     </type>
 </config>
