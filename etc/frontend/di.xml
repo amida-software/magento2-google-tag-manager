@@ -14,9 +14,9 @@
             </argument>
         </arguments>
     </type>
-    <type name="Magento\Catalog\Block\Product\ListProduct">
+    <type name="Magento\Framework\View\Element\AbstractBlock">
         <plugin name="amida_gtm_category_event_after_list"
                 type="MagePal\GoogleTagManager\Plugin\CategoryListEventAfterHtml"
-                sortOrder="10"/>
+                sortOrder="9999"/>
     </type>
 </config>
