@@ -33,7 +33,7 @@ class CategoryListEventAfterHtml
             return $result;
         }
 
-        // Расширенный детектор списка
+        
         $isList =
             ($subject instanceof \Magento\Catalog\Block\Product\ListProduct) ||
             in_array($name, [
@@ -51,7 +51,6 @@ class CategoryListEventAfterHtml
             return $result;
         }
 
-        // --- дальше твоя логика чтения сессии и вставки <script> ---
         $category = $this->registry->registry('current_category');
         $items    = $this->session->getData('data_layer_category_list');
 
