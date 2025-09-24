@@ -18,7 +18,7 @@ class CategoryListEventAfterHtml
     public function afterToHtml(ListProduct $subject, $result)
     {
         $logger = new \Monolog\Logger('comp');
-        $logger->pushHandler(new \Monolog\Handler\StreamHandler(BP . '/var/log/composition.log', \Monolog\Logger::DEBUG));
+        $logger->pushHandler(new \Monolog\Handler\StreamHandler(BP . '/var/log/dataLayer.log', \Monolog\Logger::DEBUG));
 
         try {
             $logger->info(__METHOD__ . ' start', [
