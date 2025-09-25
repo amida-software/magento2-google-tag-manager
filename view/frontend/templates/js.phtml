@@ -62,4 +62,76 @@ $containerCode = $block->getEmbeddedCode();
 </script>
 <?php $block->clearDataLayerSessionInfo(); ?>
 <?php endif; ?>
+<script>
+    (function () {
+        if (window.__gtmCartHookInstalled) return;
+        window.__gtmCartHookInstalled = true;
+
+        const dataLayerName = <?= json_encode($dataLayerName) ?>;
+        const cartEventEndpoint = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
+
+        function getDataLayer() {
+            window[dataLayerName] = window[dataLayerName] || [];
+            return window[dataLayerName];
+        }
+
+        function isCartRequestUrl(url) {
+            url = String(url || '');
+            return /\/checkout\/(?:cart\/(?:add|delete|update|updateItemQty|remove)|sidebar\/(?:updateItemQty|removeItem))/.test(url);
+        }
+
+        function requestCartEventAndPush(originalRequestUrl) {
+            const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalRequestUrl || '');
+            fetch(url, { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(payload => {
+                    if (!payload || !payload.event) return;
+                    const dl = getDataLayer();
+                    dl.push({ ecommerce: null });
+                    dl.push(payload);
+                })
+                .catch(() => {});
+        }
+
+        if (window.fetch) {
+            const originalFetch = window.fetch;
+            window.fetch = function (input, init) {
+                const url = (typeof input === 'string') ? input : (input && input.url) || '';
+                const isCartCall = isCartRequestUrl(url);
+                return originalFetch(input, init).then(response => {
+                    if (isCartCall) {
+                        try { response.clone().text().finally(() => requestCartEventAndPush(url)); }
+                        catch (e) { requestCartEventAndPush(url); }
+                    }
+                    return response;
+                });
+            };
+        }
+
+        if (window.XMLHttpRequest) {
+            const originalOpen = XMLHttpRequest.prototype.open;
+            const originalSend = XMLHttpRequest.prototype.send;
+
+            XMLHttpRequest.prototype.open = function (method, url) {
+                this.__isCartRequest = isCartRequestUrl(url || '');
+                this.__originalRequestUrl = url || '';
+                return originalOpen.apply(this, arguments);
+            };
+
+            XMLHttpRequest.prototype.send = function () {
+                this.addEventListener('load', () => {
+                    if (this.__isCartRequest) requestCartEventAndPush(this.__originalRequestUrl);
+                });
+                return originalSend.apply(this, arguments);
+            };
+        }
+
+        if (!window.__gtmCartPingDone) {
+            window.__gtmCartPingDone = true;
+            document.addEventListener('DOMContentLoaded', () => {
+                requestCartEventAndPush(location.pathname + location.search);
+            });
+        }
+    })();
+</script>
 <!-- End Google Tag Manager by MagePal -->

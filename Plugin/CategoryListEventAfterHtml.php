@@ -33,7 +33,7 @@ class CategoryListEventAfterHtml
             return $result;
         }
 
-        
+
         $isList =
             ($subject instanceof \Magento\Catalog\Block\Product\ListProduct) ||
             in_array($name, [
