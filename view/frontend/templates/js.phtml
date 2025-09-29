@@ -1,67 +1,3 @@
-<?php
-/**
- * Copyright © MagePal LLC. All rights reserved.
- * See COPYING.txt for license details.
- * http://www.magepal.com | support@magepal.com
- */
-
-/** @var $block MagePal\GoogleTagManager\Block\DataLayer **/
-$dataLayerName = $block->getDataLayerName();
-$accountId = $block->getAccountId();
-$containerCode = $block->getEmbeddedCode();
-?>
-
-<!-- Google Tag Manager by MagePal -->
-<script type="text/javascript">
-    window.<?= /* @noEscape */ $dataLayerName ?> = window.<?= /* @noEscape */ $dataLayerName ?> || [];
-    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });
-
-<?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
-    <?= /* @noEscape */ $block->getDataLayerJs() ?>
-    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-        j=d.createElement(s),dl=l!='<?= /* @noEscape */ $dataLayerName ?>'?'&l='+l:'';j.async=true;j.src=
-        'https://www.googletagmanager.com/gtm.js?id='+i+dl<?= /* @noEscape */ $containerCode ? "+'{$containerCode}'" : '' ?>;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','<?= /* @noEscape */ $dataLayerName ?>','<?= /* @noEscape */ $accountId ?>');
-<?php endif; ?>
-</script>
-
-<?php if ($block->isAdvancedSettingsEnabled()): ?>
-    <?= /* @noEscape */ $block->getDataLayerJs() ?>
-    <?= /* @noEscape */ $block->getAdvancedSettingsJsCode() ?>
-<?php endif; ?>
-
-<?php if (($block->isGdprEnabled() || !$block->addJsInHead()) && !$block->isAdvancedSettingsEnabled()) : ?>
-<script type="text/x-magento-init">
-    {
-        "*": {
-            "magepalGtmDatalayer": {
-                "isCookieRestrictionModeEnabled": <?= /* @noEscape */ $block->isCookieRestrictionModeEnabled() ?>,
-                "currentWebsite": <?= /* @noEscape */ $block->getCurrentWebsiteId() ?>,
-                "cookieName": "<?= /* @noEscape */ $block->getCookieRestrictionName() ?>",
-                "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>",
-                "accountId": "<?= /* @noEscape */ $block->getAccountId() ?>",
-                "data": <?= /* @noEscape */ $block->getDataLayerJson() ?>,
-                "isGdprEnabled": <?= /* @noEscape */ $block->isGdprEnabled() ?>,
-                "gdprOption": <?= /* @noEscape */ $block->getGdprOption() ?>,
-                "addJsInHeader": <?= /* @noEscape */ $block->addJsInHead() ?>,
-                "containerCode": "<?= /* @noEscape */ $block->getEmbeddedCode() ?>"
-            }
-        }
-    }
-</script>
-<?php else : ?>
-<script type="text/x-magento-init">
-    {
-        "*": {
-            "magepalGtmDatalayer": {
-                "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>"
-            }
-        }
-    }
-</script>
-<?php $block->clearDataLayerSessionInfo(); ?>
-<?php endif; ?>
 <script>
     (function () {
         if (window.__gtmCartHookInstalled) return;
@@ -70,38 +6,80 @@ $containerCode = $block->getEmbeddedCode();
         const dataLayerName = <?= json_encode($dataLayerName) ?>;
         const cartEventEndpoint = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
 
-        function getDataLayer() {
+        function getDL() {
             window[dataLayerName] = window[dataLayerName] || [];
             return window[dataLayerName];
         }
 
-        function isCartRequestUrl(url) {
+        function isCart(url) {
             url = String(url || '');
             return /\/checkout\/(?:cart\/(?:add|delete|update|updateItemQty|remove)|sidebar\/(?:updateItemQty|removeItem))/.test(url);
         }
 
-        function requestCartEventAndPush(originalRequestUrl) {
-            const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalRequestUrl || '');
+        function isOtp(url) {
+            try {
+                const u = new URL(url, location.origin);
+                return /\/otplogin\/account\/sendotpcreate$/i.test(u.pathname);
+            } catch (e) {
+                return /\/otplogin\/account\/sendotpcreate\b/i.test(String(url || ''));
+            }
+        }
+
+        function pingCart(originalUrl) {
+            const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalUrl || '');
             fetch(url, { credentials: 'same-origin' })
                 .then(r => r.json())
                 .then(payload => {
                     if (!payload || !payload.event) return;
-                    const dl = getDataLayer();
+                    const dl = getDL();
                     dl.push({ ecommerce: null });
                     dl.push(payload);
                 })
                 .catch(() => {});
         }
 
+        function pushGenerateLead() {
+            const dl = getDL();
+            dl.push({ ecommerce: null });
+            dl.push({
+                event: 'generate_lead',
+                ecommerce: {
+                    currency: 'UAH',
+                    value: 0
+                }
+            });
+        }
+
+        function handleOtpResponse(text, ok) {
+            if (!ok) return;
+            try {
+                const j = JSON.parse(text || '{}');
+                const success =
+                    j.success === true ||
+                    j.status === true ||
+                    j.status === 'success' ||
+                    j.error === false ||
+                    j.error === 0 ||
+                    j.code === 200;
+                if (success) pushGenerateLead();
+            } catch (_) {}
+        }
+
         if (window.fetch) {
             const originalFetch = window.fetch;
             window.fetch = function (input, init) {
                 const url = (typeof input === 'string') ? input : (input && input.url) || '';
-                const isCartCall = isCartRequestUrl(url);
+                const cartCall = isCart(url);
+                const otpCall  = isOtp(url);
+
                 return originalFetch(input, init).then(response => {
-                    if (isCartCall) {
-                        try { response.clone().text().finally(() => requestCartEventAndPush(url)); }
-                        catch (e) { requestCartEventAndPush(url); }
+                    if (cartCall) {
+                        try { response.clone().text().finally(() => pingCart(url)); }
+                        catch (e) { pingCart(url); }
+                    }
+                    if (otpCall) {
+                        try { response.clone().text().then(t => handleOtpResponse(t, response.ok)); }
+                        catch (e) {}
                     }
                     return response;
                 });
@@ -109,29 +87,30 @@ $containerCode = $block->getEmbeddedCode();
         }
 
         if (window.XMLHttpRequest) {
-            const originalOpen = XMLHttpRequest.prototype.open;
-            const originalSend = XMLHttpRequest.prototype.send;
+            const origOpen = XMLHttpRequest.prototype.open;
+            const origSend = XMLHttpRequest.prototype.send;
 
             XMLHttpRequest.prototype.open = function (method, url) {
-                this.__isCartRequest = isCartRequestUrl(url || '');
-                this.__originalRequestUrl = url || '';
-                return originalOpen.apply(this, arguments);
+                this.__isCart = isCart(url || '');
+                this.__isOtp  = isOtp(url || '');
+                this.__origUrl = url || '';
+                return origOpen.apply(this, arguments);
             };
 
             XMLHttpRequest.prototype.send = function () {
                 this.addEventListener('load', () => {
-                    if (this.__isCartRequest) requestCartEventAndPush(this.__originalRequestUrl);
+                    if (this.__isCart) pingCart(this.__origUrl);
+                    if (this.__isOtp)  handleOtpResponse(String(this.responseText || ''), this.status >= 200 && this.status < 300);
                 });
-                return originalSend.apply(this, arguments);
+                return origSend.apply(this, arguments);
             };
         }
 
         if (!window.__gtmCartPingDone) {
             window.__gtmCartPingDone = true;
             document.addEventListener('DOMContentLoaded', () => {
-                requestCartEventAndPush(location.pathname + location.search);
+                pingCart(location.pathname + location.search);
             });
         }
     })();
 </script>
-<!-- End Google Tag Manager by MagePal -->
