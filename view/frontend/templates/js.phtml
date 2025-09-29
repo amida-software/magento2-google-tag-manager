@@ -1,12 +1,76 @@
+<?php
+/**
+ * Copyright © MagePal LLC. All rights reserved.
+ * See COPYING.txt for license details.
+ * http://www.magepal.com | support@magepal.com
+ */
+
+/** @var $block MagePal\GoogleTagManager\Block\DataLayer **/
+$dataLayerName = $block->getDataLayerName();
+$accountId = $block->getAccountId();
+$containerCode = $block->getEmbeddedCode();
+?>
+
+<!-- Google Tag Manager by MagePal -->
+<script type="text/javascript">
+    window.<?= /* @noEscape */ $dataLayerName ?> = window.<?= /* @noEscape */ $dataLayerName ?> || [];
+    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });
+
+<?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
+    <?= /* @noEscape */ $block->getDataLayerJs() ?>
+    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='<?= /* @noEscape */ $dataLayerName ?>'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl<?= /* @noEscape */ $containerCode ? "+'{$containerCode}'" : '' ?>;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','<?= /* @noEscape */ $dataLayerName ?>','<?= /* @noEscape */ $accountId ?>');
+<?php endif; ?>
+</script>
+
+<?php if ($block->isAdvancedSettingsEnabled()): ?>
+    <?= /* @noEscape */ $block->getDataLayerJs() ?>
+    <?= /* @noEscape */ $block->getAdvancedSettingsJsCode() ?>
+<?php endif; ?>
+
+<?php if (($block->isGdprEnabled() || !$block->addJsInHead()) && !$block->isAdvancedSettingsEnabled()) : ?>
+<script type="text/x-magento-init">
+    {
+        "*": {
+            "magepalGtmDatalayer": {
+                "isCookieRestrictionModeEnabled": <?= /* @noEscape */ $block->isCookieRestrictionModeEnabled() ?>,
+                "currentWebsite": <?= /* @noEscape */ $block->getCurrentWebsiteId() ?>,
+                "cookieName": "<?= /* @noEscape */ $block->getCookieRestrictionName() ?>",
+                "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>",
+                "accountId": "<?= /* @noEscape */ $block->getAccountId() ?>",
+                "data": <?= /* @noEscape */ $block->getDataLayerJson() ?>,
+                "isGdprEnabled": <?= /* @noEscape */ $block->isGdprEnabled() ?>,
+                "gdprOption": <?= /* @noEscape */ $block->getGdprOption() ?>,
+                "addJsInHeader": <?= /* @noEscape */ $block->addJsInHead() ?>,
+                "containerCode": "<?= /* @noEscape */ $block->getEmbeddedCode() ?>"
+            }
+        }
+    }
+</script>
+<?php else : ?>
+<script type="text/x-magento-init">
+    {
+        "*": {
+            "magepalGtmDatalayer": {
+                "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>"
+            }
+        }
+    }
+</script>
+<?php $block->clearDataLayerSessionInfo(); ?>
+<?php endif; ?>
 <script>
     (function () {
-        if (window.__gtmCartHookInstalled) return;
-        window.__gtmCartHookInstalled = true;
+        if (window.__gtmHookInstalled) return;
+        window.__gtmHookInstalled = true;
 
         const dataLayerName = <?= json_encode($dataLayerName) ?>;
         const cartEventEndpoint = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
 
-        function getDL() {
+        function dl() {
             window[dataLayerName] = window[dataLayerName] || [];
             return window[dataLayerName];
         }
@@ -17,52 +81,38 @@
         }
 
         function isOtp(url) {
-            try {
-                const u = new URL(url, location.origin);
-                return /\/otplogin\/account\/sendotpcreate$/i.test(u.pathname);
-            } catch (e) {
-                return /\/otplogin\/account\/sendotpcreate\b/i.test(String(url || ''));
-            }
+            url = String(url || '');
+            return /\/otplogin\/account\/sendotpcreate/i.test(url);
         }
 
-        function pingCart(originalUrl) {
-            const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalUrl || '');
+        function pingCart(originalRequestUrl) {
+            const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalRequestUrl || '');
             fetch(url, { credentials: 'same-origin' })
                 .then(r => r.json())
                 .then(payload => {
                     if (!payload || !payload.event) return;
-                    const dl = getDL();
-                    dl.push({ ecommerce: null });
-                    dl.push(payload);
+                    const layer = dl();
+                    layer.push({ ecommerce: null });
+                    layer.push(payload);
                 })
                 .catch(() => {});
         }
 
-        function pushGenerateLead() {
-            const dl = getDL();
-            dl.push({ ecommerce: null });
-            dl.push({
+        function handleOtpResponse(respText, ok) {
+            if (!ok) return;
+            try {
+                const j = JSON.parse(respText || '{}');
+                if (j && (j.success === false || j.error)) return;
+            } catch (e) {}
+            const layer = dl();
+            layer.push({ ecommerce: null });
+            layer.push({
                 event: 'generate_lead',
                 ecommerce: {
                     currency: 'UAH',
-                    value: 0
+                    value: 99.99
                 }
             });
-        }
-
-        function handleOtpResponse(text, ok) {
-            if (!ok) return;
-            try {
-                const j = JSON.parse(text || '{}');
-                const success =
-                    j.success === true ||
-                    j.status === true ||
-                    j.status === 'success' ||
-                    j.error === false ||
-                    j.error === 0 ||
-                    j.code === 200;
-                if (success) pushGenerateLead();
-            } catch (_) {}
         }
 
         if (window.fetch) {
@@ -78,8 +128,13 @@
                         catch (e) { pingCart(url); }
                     }
                     if (otpCall) {
-                        try { response.clone().text().then(t => handleOtpResponse(t, response.ok)); }
-                        catch (e) {}
+                        try {
+                            response.clone().text()
+                                .then(t => handleOtpResponse(t, response.ok))
+                                .catch(() => handleOtpResponse('', response.ok));
+                        } catch (e) {
+                            handleOtpResponse('', response.ok);
+                        }
                     }
                     return response;
                 });
@@ -87,22 +142,22 @@
         }
 
         if (window.XMLHttpRequest) {
-            const origOpen = XMLHttpRequest.prototype.open;
-            const origSend = XMLHttpRequest.prototype.send;
+            const originalOpen = XMLHttpRequest.prototype.open;
+            const originalSend = XMLHttpRequest.prototype.send;
 
             XMLHttpRequest.prototype.open = function (method, url) {
                 this.__isCart = isCart(url || '');
                 this.__isOtp  = isOtp(url || '');
-                this.__origUrl = url || '';
-                return origOpen.apply(this, arguments);
+                this.__url    = url || '';
+                return originalOpen.apply(this, arguments);
             };
 
             XMLHttpRequest.prototype.send = function () {
                 this.addEventListener('load', () => {
-                    if (this.__isCart) pingCart(this.__origUrl);
+                    if (this.__isCart) pingCart(this.__url);
                     if (this.__isOtp)  handleOtpResponse(String(this.responseText || ''), this.status >= 200 && this.status < 300);
                 });
-                return origSend.apply(this, arguments);
+                return originalSend.apply(this, arguments);
             };
         }
 
@@ -114,3 +169,5 @@
         }
     })();
 </script>
+
+<!-- End Google Tag Manager by MagePal -->
