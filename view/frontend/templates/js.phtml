@@ -14,10 +14,10 @@ $containerCode = $block->getEmbeddedCode();
 <!-- Google Tag Manager by MagePal -->
 
 <script type="text/javascript">
-    window.<?= /* @noEscape */ $dataLayerName ?> = window.<?= /* @noEscape */ $dataLayerName ?> || [];
-    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });\
+    window.<?= $dataLayerName ?> = window.<?= $dataLayerName ?> || [];
+    window.<?= $dataLayerName ?>.push({ ecommerce: null });
 
-<?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
+    <?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
     <?= /* @noEscape */ $block->getDataLayerJs() ?>
     (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -64,74 +64,93 @@ $containerCode = $block->getEmbeddedCode();
 <?php $block->clearDataLayerSessionInfo(); ?>
 <?php endif; ?>
 <script>
-    (function(){
-        var DL = <?= json_encode($dataLayerName) ?>;
-        window[DL] = window[DL] || [];
-        function push(v){ window[DL].push(v); }
+    (function () {
+        if (window.__gtmHookInstalled) return;
+        window.__gtmHookInstalled = true;
 
-        var OTP_FLAG='__gtmOtpFlow', LOGIN_FLAG='__gtmLoginPending';
-        function set(k,v){ try{ sessionStorage.setItem(k,v) }catch(e){} }
-        function get(k){ try{ return sessionStorage.getItem(k) }catch(e){ return null } }
-        function del(k){ try{ sessionStorage.removeItem(k) }catch(e){} }
+        var DL_NAME   = <?= json_encode($dataLayerName) ?>;
+        var LOGIN_KEY = '__gtmLoginPending';
+        var OTP_KEY   = '__gtmOtpFlow';
 
-        function isOtpUrl(u){ u=String(u||''); return /\/otplogin\/account\/(?:sendotp|otplogin)(?:\/|\?|$)/i.test(u) }
-        function isOtpLogin(u){ u=String(u||''); return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(u) }
-        function isLoginPost(u){ u=String(u||''); return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(u) }
+        window[DL_NAME] = window[DL_NAME] || [];
+        function push(v){ window[DL_NAME].push(v); }
+
+        function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(_){ return null; } }
+        function ssSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(_){ } }
+        function ssDel(k){ try{ sessionStorage.removeItem(k); }catch(_){ } }
+
+        function isOtpAny(u){   u=String(u||''); return /\/otplogin\/account\/(?:sendotp|otplogin)(?:\/|\?|$)/i.test(u); }
+        function isOtpLogin(u){ u=String(u||''); return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(u); }
+        function isLoginPost(u){u=String(u||''); return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(u); }
+
+        function markOtpOn(){ ssSet(OTP_KEY,'1'); }
+        function clearOtp(){ ssDel(OTP_KEY); }
+        function isOtpFlow(){ return ssGet(OTP_KEY)==='1'; }
+
+        var __loginSent = false;
+        function pushLogin(method){
+            if (__loginSent) return;
+            __loginSent = true;
+            push({ecommerce:null});
+            push({event:'login', ecommerce:{method: method}});
+        }
 
         if (window.fetch){
-            var _f = window.fetch;
-            window.fetch = function(i,init){
-                var url = (typeof i==='string') ? i : (i && i.url) || '';
-                if (isOtpUrl(url)) set(OTP_FLAG,'1');
-                if (isLoginPost(url)) set(LOGIN_FLAG,'Google');
+            var _fetch = window.fetch;
+            window.fetch = function(input, init){
+                var url = (typeof input === 'string') ? input : (input && input.url) || '';
 
-                return _f(i,init).then(function(r){
+                if (isOtpAny(url))   markOtpOn();              // начался OTP-флоу
+                if (isLoginPost(url)) ssSet(LOGIN_KEY,'Google'); // обычный логин → после редиректа пушнем Google
+
+                return _fetch(input, init).then(function(resp){
                     if (isOtpLogin(url)){
-                        var ok = r.ok;
+                        var ok = resp && resp.ok;
                         try {
-                            r.clone().text().then(function(){
-                                if (ok){
-                                    push({ecommerce:null});
-                                    push({event:'login', ecommerce:{method:'Phone'}});
-                                    del(LOGIN_FLAG); del(OTP_FLAG);
+                            resp.clone().text().finally(function(){
+                                if (ok){                              // успех OTP-логина → пушим Phone и чистим флаги
+                                    pushLogin('Phone');
+                                    ssDel(LOGIN_KEY);
+                                    clearOtp();
                                 }
                             });
-                        } catch(e){}
+                        } catch(_){}
                     }
-                    return r;
+                    return resp;
                 });
             };
         }
 
-        var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.open = function(m,u){
-            this.__u = u || '';
-            if (isOtpUrl(this.__u)) set(OTP_FLAG,'1');
-            if (isLoginPost(this.__u)) set(LOGIN_FLAG,'Google');
-            return XO.apply(this, arguments);
-        };
-        XMLHttpRequest.prototype.send = function(){
-            var self = this;
-            self.addEventListener('load', function(){
-                if (isOtpLogin(self.__u) && self.status>=200 && self.status<300){
-                    push({ecommerce:null});
-                    push({event:'login', ecommerce:{method:'Phone'}});
-                    del(LOGIN_FLAG); del(OTP_FLAG);
-                }
-            });
-            return XS.apply(this, arguments);
-        };
+        if (window.XMLHttpRequest){
+            var XO = XMLHttpRequest.prototype.open;
+            var XS = XMLHttpRequest.prototype.send;
+
+            XMLHttpRequest.prototype.open = function(method, url){
+                this.__gtmUrl = url || '';
+                if (isOtpAny(this.__gtmUrl))   markOtpOn();
+                if (isLoginPost(this.__gtmUrl)) ssSet(LOGIN_KEY,'Google');
+                return XO.apply(this, arguments);
+            };
+
+            XMLHttpRequest.prototype.send = function(){
+                this.addEventListener('load', () => {
+                    if (isOtpLogin(this.__gtmUrl) && this.status >= 200 && this.status < 300){
+                        pushLogin('Phone');
+                        ssDel(LOGIN_KEY);
+                        clearOtp();
+                    }
+                });
+                return XS.apply(this, arguments);
+            };
+        }
 
         document.addEventListener('DOMContentLoaded', function(){
-            var pending = get(LOGIN_FLAG);
-            var isOtp = get(OTP_FLAG) === '1';
-            if (pending && !isOtp){
-                push({ecommerce:null});
-                push({event:'login', ecommerce:{method: pending}});
-                del(LOGIN_FLAG);
+            var pending = ssGet(LOGIN_KEY);
+            if (pending && !isOtpFlow()){
+                pushLogin(pending);
+                ssDel(LOGIN_KEY);
             }
         });
     })();
 </script>
-
 <!-- End Google Tag Manager by MagePal -->
