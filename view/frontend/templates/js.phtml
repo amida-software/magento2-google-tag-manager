@@ -12,12 +12,11 @@ $containerCode = $block->getEmbeddedCode();
 ?>
 
 <!-- Google Tag Manager by MagePal -->
-
 <script type="text/javascript">
-    window.<?= $dataLayerName ?> = window.<?= $dataLayerName ?> || [];
-    window.<?= $dataLayerName ?>.push({ ecommerce: null });
+    window.<?= /* @noEscape */ $dataLayerName ?> = window.<?= /* @noEscape */ $dataLayerName ?> || [];
+    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });
 
-    <?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
+<?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
     <?= /* @noEscape */ $block->getDataLayerJs() ?>
     (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
             new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -68,148 +67,161 @@ $containerCode = $block->getEmbeddedCode();
         if (window.__gtmHookInstalled) return;
         window.__gtmHookInstalled = true;
 
-        var DL_NAME   = <?= json_encode($dataLayerName) ?>;
-        var CART_URL  = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
-        var LOGIN_KEY = '__gtmLoginPending';
-        var OTP_KEY   = '__gtmOtpFlow';
+        const dataLayerName     = <?= json_encode($dataLayerName) ?>;
+        const cartEventEndpoint = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
 
-        window[DL_NAME] = window[DL_NAME] || [];
-        function dl(){ return window[DL_NAME]; }
-        function push(v){ dl().push(v); }
-        function ssGet(k){ try{ return sessionStorage.getItem(k) }catch(_){ return null } }
-        function ssSet(k,v){ try{ sessionStorage.setItem(k,v) }catch(_){ } }
-        function ssDel(k){ try{ sessionStorage.removeItem(k) }catch(_){ } }
+        const DEBUG      = (localStorage.getItem('gtmDebug') === '1');
+        const LOGIN_FLAG = '__gtmLoginPending';
 
-        function isCart(u){ u=String(u||''); return /\/checkout\/(?:cart\/(?:add|delete|update|updateItemQty|remove)|sidebar\/(?:updateItemQty|removeItem))/.test(u) }
-        function isOtpAny(u){    u=String(u||''); return /\/otplogin\/account\/(?:sendotp|otplogin|sendotpcreate)(?:\/|\?|$)/i.test(u) }
-        function isOtpLogin(u){  u=String(u||''); return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(u) }
-        function isOtpCreate(u){ u=String(u||''); return /\/otplogin\/account\/sendotpcreate(?:\/|\?|$)/i.test(u) }
-        function isLoginPost(u){ u=String(u||''); return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(u) }
+        function log() { if (DEBUG) try { console.log('[GTM]', ...arguments); } catch (e) {} }
+        function group(title, payload) {
+            if (!DEBUG) return;
+            try { console.groupCollapsed(title); if (payload !== undefined) console.log(payload); console.groupEnd(); } catch (e) {}
+        }
 
-        function markOtpOn(){ ssSet(OTP_KEY,'1') }
-        function clearOtp(){ ssDel(OTP_KEY) }
-        function inOtp(){ return ssGet(OTP_KEY)==='1' }
+        function dl() {
+            window[dataLayerName] = window[dataLayerName] || [];
+            return window[dataLayerName];
+        }
+
         
-        (function patchDL(){
-            var layer = dl();
-            if (layer.__patchedFilter) return;
-            var orig = layer.push.bind(layer);
-            layer.push = function(a){
-                try{
-                    if (inOtp() && a && a.event==='login' && a.ecommerce && a.ecommerce.method==='Google'){
-                        return layer.length;
-                    }
-                }catch(_){}
-                return orig.apply(layer, arguments);
+        (function patchDL() {
+            if (!DEBUG) return;
+            const layer = dl();
+            if (layer.__patched) return;
+            const origPush = layer.push.bind(layer);
+            layer.push = function () {
+                for (const arg of arguments) {
+                    const ev = arg && arg.event ? ` ${arg.event}` : '';
+                    group(`[DL] push${ev}`, arg);
+                }
+                return origPush(...arguments);
             };
-            layer.__patchedFilter = true;
+            layer.__patched = true;
         })();
 
-        function pingCart(src){
-            var url = CART_URL + '?src=' + encodeURIComponent(src||'');
-            fetch(url, { credentials:'same-origin' })
-                .then(function(r){ return r.json() })
-                .then(function(payload){
-                    if (!payload || !payload.event) return;
-                    push({ecommerce:null});
-                    push(payload);
+
+        function isCart(url)       { return /\/checkout\/(?:cart\/(?:add|delete|update|updateItemQty|remove)|sidebar\/(?:updateItemQty|removeItem))/.test(String(url || '')); }
+        function isOtpCreate(url)  { return /\/otplogin\/account\/sendotpcreate(?:\/|\?|$)/i.test(String(url || '')); } // generate_lead
+        function isLoginPost(url)  { return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(String(url || '')); }     // login -> Google
+        function isSendOtp(url)    { return /\/otplogin\/account\/sendotp(?:\/|\?|$)/i.test(String(url || '')); }       // login -> Phone
+
+
+        function pingCart(originalRequestUrl) {
+            const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalRequestUrl || '');
+            group('[cart] ping → ' + url);
+            fetch(url, { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(payload => {
+                    if (!payload || !payload.event) { log('[cart] skip'); return; }
+                    group('[cart] payload', payload);
+                    const layer = dl();
+                    layer.push({ ecommerce: null });
+                    layer.push(payload);
                 })
-                .catch(function(){});
+                .catch(err => group('[cart] error', err));
         }
 
-        function handleOtpCreateOk(text, ok){
-            if (!ok) return;
-            try{
-                var j = JSON.parse(text||'{}');
-                if (j && (j.success===false || j.error)) return;
-            }catch(_){}
-            push({ecommerce:null});
-            push({event:'generate_lead', ecommerce:{currency:'UAH', value: 0}});
+
+        function handleOtpCreateResponse(respText, ok) {
+            if (!ok) { log('[otp-create] not OK'); return; }
+            try {
+                const j = JSON.parse(respText || '{}');
+                if (j && (j.success === false || j.error)) { group('[otp-create] error', j); return; }
+            } catch (e) {}
+            group('[otp-create] push generate_lead');
+            const layer = dl();
+            layer.push({ ecommerce: null });
+            layer.push({ event: 'generate_lead', ecommerce: { currency: 'UAH', value: 0 } });
         }
 
-        if (window.fetch){
-            var _fetch = window.fetch;
-            window.fetch = function(input, init){
-                var url = (typeof input==='string') ? input : (input && input.url) || '';
-                var cart = isCart(url);
-                if (isOtpAny(url))   markOtpOn();
-                if (isLoginPost(url)) ssSet(LOGIN_KEY,'Google');
 
-                return _fetch(input, init).then(function(resp){
-                    if (cart){
-                        try { resp.clone().text().finally(function(){ pingCart(url) }); }
-                        catch(e){ pingCart(url); }
+        function setLoginFlag(method) {
+            try { sessionStorage.setItem(LOGIN_FLAG, method); } catch (e) {}
+        }
+        function takeLoginFlag() {
+            try {
+                const v = sessionStorage.getItem(LOGIN_FLAG);
+                sessionStorage.removeItem(LOGIN_FLAG);
+                return v;
+            } catch (e) { return null; }
+        }
+        function pushLogin(method) {
+            const layer = dl();
+            layer.push({ ecommerce: null });
+            layer.push({ event: 'login', ecommerce: { method: method || 'Google' } });
+        }
+
+        if (window.fetch) {
+            const originalFetch = window.fetch;
+            window.fetch = function (input, init) {
+                const url = (typeof input === 'string') ? input : (input && input.url) || '';
+                const _isCart      = isCart(url);
+                const _isOtpCreate = isOtpCreate(url);
+                const _isLoginPost = isLoginPost(url);
+                const _isSendOtp   = isSendOtp(url);
+                if (_isCart || _isOtpCreate || _isLoginPost || _isSendOtp) log('[fetch]', url);
+
+                return originalFetch(input, init).then(response => {
+                    if (_isCart) {
+                        try { response.clone().text().finally(() => pingCart(url)); } catch (e) { pingCart(url); }
                     }
-                    if (isOtpLogin(url)){
-                        var ok = resp && resp.ok;
-                        try { resp.clone().text().finally(function(){
-                            if (ok){
-                                push({ecommerce:null});
-                                push({event:'login', ecommerce:{method:'Phone'}});
-                                ssDel(LOGIN_KEY); clearOtp();
-                            }
-                        }); } catch(_){}
+                    if (_isOtpCreate) {
+                        try { response.clone().text().then(t => handleOtpCreateResponse(t, response.ok)).catch(() => handleOtpCreateResponse('', response.ok)); }
+                        catch (e) { handleOtpCreateResponse('', response.ok); }
                     }
-                    if (isOtpCreate(url)){
-                        var okC = resp && resp.ok;
-                        try { resp.clone().text().then(function(t){ handleOtpCreateOk(t, okC); })
-                            .catch(function(){ handleOtpCreateOk('', okC); }); }
-                        catch(_){ handleOtpCreateOk('', okC); }
+                    if (_isLoginPost && response && response.ok) {
+                        setLoginFlag('Google');
                     }
-                    return resp;
+                    if (_isSendOtp && response && response.ok) {
+                        setLoginFlag('Phone');
+                    }
+                    return response;
                 });
             };
         }
 
-        if (window.XMLHttpRequest){
-            var XO = XMLHttpRequest.prototype.open, XS = XMLHttpRequest.prototype.send;
-            XMLHttpRequest.prototype.open = function(m,u){
-                this.__gtmUrl = u || '';
-                if (isCart(this.__gtmUrl)) this.__gtmIsCart = true;
-                if (isOtpAny(this.__gtmUrl))   markOtpOn();
-                if (isLoginPost(this.__gtmUrl)) ssSet(LOGIN_KEY,'Google');
-                return XO.apply(this, arguments);
+        if (window.XMLHttpRequest) {
+            const origOpen = XMLHttpRequest.prototype.open;
+            const origSend = XMLHttpRequest.prototype.send;
+
+            XMLHttpRequest.prototype.open = function (method, url) {
+                this.__isCart      = isCart(url || '');
+                this.__isOtpCreate = isOtpCreate(url || '');
+                this.__isLoginPost = isLoginPost(url || '');
+                this.__isSendOtp   = isSendOtp(url || '');
+                this.__url = url || '';
+                if (this.__isCart || this.__isOtpCreate || this.__isLoginPost || this.__isSendOtp) log('[xhr open]', method, url);
+                return origOpen.apply(this, arguments);
             };
-            XMLHttpRequest.prototype.send = function(){
+
+            XMLHttpRequest.prototype.send = function () {
                 this.addEventListener('load', () => {
-                    if (this.__gtmIsCart) pingCart(this.__gtmUrl);
-                    if (isOtpLogin(this.__gtmUrl) && this.status>=200 && this.status<300){
-                        push({ecommerce:null});
-                        push({event:'login', ecommerce:{method:'Phone'}});
-                        ssDel(LOGIN_KEY); clearOtp();
-                    }
-                    if (isOtpCreate(this.__gtmUrl)){
-                        handleOtpCreateOk(String(this.responseText||''), this.status>=200 && this.status<300);
-                    }
+                    const ok = this.status >= 200 && this.status < 300;
+                    if (this.__isCart)      pingCart(this.__url);
+                    if (this.__isOtpCreate) handleOtpCreateResponse(String(this.responseText || ''), ok);
+                    if (this.__isLoginPost && ok) setLoginFlag('Google');
+                    if (this.__isSendOtp   && ok) setLoginFlag('Phone');
                 });
-                return XS.apply(this, arguments);
+                return origSend.apply(this, arguments);
             };
         }
 
-        document.addEventListener('submit', function(e){
-            try{
-                var f = e.target;
-                if (!f || !f.action) return;
-                var action = f.action;
-                if (isOtpAny(action)){ markOtpOn(); ssDel(LOGIN_KEY); }
-                if (isLoginPost(action)){ ssSet(LOGIN_KEY,'Google'); }
-                if (isCart(action)){ window.__gtmCartPostPending = true; }
-            }catch(_){}
-        }, true);
-
-        document.addEventListener('DOMContentLoaded', function(){
-            if (window.__gtmCartPostPending){
-                window.__gtmCartPostPending = false;
+        if (!window.__gtmCartPingDone) {
+            window.__gtmCartPingDone = true;
+            document.addEventListener('DOMContentLoaded', () => {
+                log('[init] initial cart ping');
                 pingCart(location.pathname + location.search);
-            }
-            var pending = ssGet(LOGIN_KEY);
-            if (pending && !inOtp()){
-                push({ecommerce:null});
-                push({event:'login', ecommerce:{method: pending}});
-                ssDel(LOGIN_KEY);
-            }
-        });
+
+                const pending = takeLoginFlag();
+                if (pending) {
+                    group('[login] push after redirect', pending);
+                    pushLogin(pending);
+                }
+            });
+        }
     })();
 </script>
+
 
 <!-- End Google Tag Manager by MagePal -->
