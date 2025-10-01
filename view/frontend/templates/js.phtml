@@ -157,7 +157,7 @@ $containerCode = $block->getEmbeddedCode();
                         try{ resp.clone().text().then(t=>handleOtpLoginResponse(t, resp.ok)).catch(()=>handleOtpLoginResponse('', resp.ok)); }
                         catch(e){ handleOtpLoginResponse('', resp.ok); }
                     }
-                    if (loginCall && resp && resp.ok && /\/customer\/account\/login\/?$/.test(location.pathname) && !isOtpFlow()){
+                    if (loginCall && resp && resp.ok && !isOtpFlow()){
                         markLoginAfterRedirect('Google');
                     }
                     return resp;
@@ -185,7 +185,7 @@ $containerCode = $block->getEmbeddedCode();
                     if (this.__isCart)      pingCart(this.__url);
                     if (this.__isOtpCreate) handleOtpCreateResponse(String(this.responseText||''), this.status>=200 && this.status<300);
                     if (this.__isOtpLogin)  handleOtpLoginResponse(String(this.responseText||''), this.status>=200 && this.status<300);
-                    if (this.__isLoginPost && this.status>=200 && this.status<400 && /\/customer\/account\/login\/?$/.test(location.pathname) && !isOtpFlow()){
+                    if (this.__isLoginPost && this.status>=200 && this.status<400 && !isOtpFlow()){
                         markLoginAfterRedirect('Google');
                     }
                 });
