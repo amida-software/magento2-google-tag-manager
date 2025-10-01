@@ -12,9 +12,27 @@ $containerCode = $block->getEmbeddedCode();
 ?>
 
 <!-- Google Tag Manager by MagePal -->
+
 <script type="text/javascript">
     window.<?= /* @noEscape */ $dataLayerName ?> = window.<?= /* @noEscape */ $dataLayerName ?> || [];
-    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });
+    window.<?= /* @noEscape */ $dataLayerName ?>.push({ ecommerce: null });\
+
+    // block Google event
+    (function(){
+        var layer = window.<?= $dataLayerName ?>;
+        var origPush = layer.push.bind(layer);
+        layer.push = function(obj){
+            try {
+                var fromOtp = sessionStorage.getItem('__gtmOtpFlow') === '1';
+                if (fromOtp &&
+                    obj && obj.event === 'login' &&
+                    obj.ecommerce && obj.ecommerce.method === 'Google') {
+                    return layer.length;
+                }
+            } catch(e){}
+            return origPush.apply(layer, arguments);
+        };
+    })();
 
 <?php if (!$block->isGdprEnabled() && $block->addJsInHead() && !$block->isAdvancedSettingsEnabled()): ?>
     <?= /* @noEscape */ $block->getDataLayerJs() ?>
