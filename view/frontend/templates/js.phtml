@@ -152,6 +152,7 @@ $containerCode = $block->getEmbeddedCode();
 
         const dataLayerName     = <?= json_encode($dataLayerName) ?>;
         const cartEventEndpoint = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
+        const wishlistEventEndpoint = <?= json_encode($block->getUrl('gtm/wishlist/event')) ?>;
 
         const DEBUG     = (localStorage.getItem('gtmDebug') === '1');
         const LOGIN_KEY = '__gtmLoginPending';
@@ -184,6 +185,18 @@ $containerCode = $block->getEmbeddedCode();
         function isSendOtp(url){ return /\/otplogin\/account\/sendotp(?:\/|\?|$)/i.test(String(url||'')); }        // отправка кода
         function isOtpLogin(url){ return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(String(url||'')); }       // подтверждение кода (вход)
         function isLoginPost(url){ return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(String(url||'')); }     // классический/Google
+        function isWishlistAdd(url){ return /\/wishlist\/add(?:\/|\?|$)/i.test(String(url||'')); }
+        function pingWishlist(src){
+            const url = wishlistEventEndpoint + '?src=' + encodeURIComponent(src||'');
+            fetch(url, { credentials:'same-origin' })
+                .then(r=>r.json())
+                .then(data=>{
+                    const list = Array.isArray(data?.events) ? data.events : [];
+                    if (!list.length) return;
+                    const layer = dl();
+                    list.forEach(ev => { layer.push({ecommerce:null}); layer.push(ev); });
+                });
+        }
 
         // -------- CART --------
         function pingCart(originalRequestUrl){
@@ -301,7 +314,7 @@ $containerCode = $block->getEmbeddedCode();
                 return origSend.apply(this, arguments);
             };
         }
-        
+
         if (!window.__gtmCartPingDone){
             window.__gtmCartPingDone = true;
             document.addEventListener('DOMContentLoaded', () => {
