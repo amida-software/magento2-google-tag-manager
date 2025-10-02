@@ -1,8 +1,6 @@
 <?php
 /**
- * Copyright © MagePal LLC. All rights reserved.
- * See COPYING.txt for license details.
- * http://www.magepal.com | support@magepal.com
+ * Copyright © MagePal LLC.
  */
 
 /** @var $block MagePal\GoogleTagManager\Block\DataLayer **/
@@ -13,7 +11,6 @@ $containerCode = $block->getEmbeddedCode();
 
 <!-- Google Tag Manager by MagePal -->
 <script type="text/javascript">
-
     (function ensureDLGuard(){
         const DL_NAME    = <?= json_encode($dataLayerName) ?>;
         const LOGIN_FLAG = '__gtmLoginPending';
@@ -25,9 +22,7 @@ $containerCode = $block->getEmbeddedCode();
             if (layer.__loginSeen) return null;
             const preferred = peekFlag();
             const cur = ev && ev.ecommerce && ev.ecommerce.method;
-            const finalMethod = (preferred === 'Phone' && cur !== 'Phone')
-                ? 'Phone'
-                : (cur || preferred || 'Google');
+            const finalMethod = (preferred === 'Phone' && cur !== 'Phone') ? 'Phone' : (cur || preferred || 'Google');
             ev.ecommerce = Object.assign({}, ev.ecommerce, { method: finalMethod });
             layer.__loginSeen = true;
             if (preferred) consumeFlag();
@@ -43,7 +38,7 @@ $containerCode = $block->getEmbeddedCode();
                     let a = arguments[i];
                     if (a && typeof a==='object' && a.event === 'login'){
                         a = normalizeLogin(layer, a);
-                        if (a == null) continue;
+                        if (a == null) continue; // дубликат — отбрасываем
                     }
                     args.push(a);
                 }
@@ -116,30 +111,30 @@ $containerCode = $block->getEmbeddedCode();
 <?php if (($block->isGdprEnabled() || !$block->addJsInHead()) && !$block->isAdvancedSettingsEnabled()) : ?>
     <script type="text/x-magento-init">
         {
-            "*": {
-                "magepalGtmDatalayer": {
-                    "isCookieRestrictionModeEnabled": <?= /* @noEscape */ $block->isCookieRestrictionModeEnabled() ?>,
-            "currentWebsite": <?= /* @noEscape */ $block->getCurrentWebsiteId() ?>,
-            "cookieName": "<?= /* @noEscape */ $block->getCookieRestrictionName() ?>",
-            "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>",
-            "accountId": "<?= /* @noEscape */ $block->getAccountId() ?>",
-            "data": <?= /* @noEscape */ $block->getDataLayerJson() ?>,
-            "isGdprEnabled": <?= /* @noEscape */ $block->isGdprEnabled() ?>,
-            "gdprOption": <?= /* @noEscape */ $block->getGdprOption() ?>,
-            "addJsInHeader": <?= /* @noEscape */ $block->addJsInHead() ?>,
-            "containerCode": "<?= /* @noEscape */ $block->getEmbeddedCode() ?>"
-        }
+          "*": {
+            "magepalGtmDatalayer": {
+              "isCookieRestrictionModeEnabled": <?= /* @noEscape */ $block->isCookieRestrictionModeEnabled() ?>,
+      "currentWebsite": <?= /* @noEscape */ $block->getCurrentWebsiteId() ?>,
+      "cookieName": "<?= /* @noEscape */ $block->getCookieRestrictionName() ?>",
+      "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>",
+      "accountId": "<?= /* @noEscape */ $block->getAccountId() ?>",
+      "data": <?= /* @noEscape */ $block->getDataLayerJson() ?>,
+      "isGdprEnabled": <?= /* @noEscape */ $block->isGdprEnabled() ?>,
+      "gdprOption": <?= /* @noEscape */ $block->getGdprOption() ?>,
+      "addJsInHeader": <?= /* @noEscape */ $block->addJsInHead() ?>,
+      "containerCode": "<?= /* @noEscape */ $block->getEmbeddedCode() ?>"
     }
+  }
 }
     </script>
 <?php else : ?>
     <script type="text/x-magento-init">
         {
-            "*": {
-                "magepalGtmDatalayer": {
-                    "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>"
-        }
+          "*": {
+            "magepalGtmDatalayer": {
+              "dataLayer": "<?= /* @noEscape */ $block->getDataLayerName() ?>"
     }
+  }
 }
     </script>
     <?php $block->clearDataLayerSessionInfo(); ?>
@@ -150,9 +145,9 @@ $containerCode = $block->getEmbeddedCode();
         if (window.__gtmHookInstalled) return;
         window.__gtmHookInstalled = true;
 
-        const dataLayerName     = <?= json_encode($dataLayerName) ?>;
-        const cartEventEndpoint = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
-        const wishlistEventEndpoint = <?= json_encode($block->getUrl('gtm/wishlist/event')) ?>;
+        const dataLayerName          = <?= json_encode($dataLayerName) ?>;
+        const cartEventEndpoint      = <?= json_encode($block->getUrl('gtm/cart/event')) ?>;
+        const wishlistEventEndpoint  = <?= json_encode($block->getUrl('gtm/wishlist/event')) ?>;
 
         const DEBUG     = (localStorage.getItem('gtmDebug') === '1');
         const LOGIN_KEY = '__gtmLoginPending';
@@ -179,26 +174,34 @@ $containerCode = $block->getEmbeddedCode();
             layer.__patchedDebug = true;
         })();
 
-        // -------- URL matchers --------
         function isCart(url){ return /\/checkout\/(?:cart\/(?:add|delete|update|updateItemQty|remove)|sidebar\/(?:updateItemQty|removeItem))/.test(String(url||'')); }
-        function isOtpCreate(url){ return /\/otplogin\/account\/sendotpcreate(?:\/|\?|$)/i.test(String(url||'')); } // generate_lead
-        function isSendOtp(url){ return /\/otplogin\/account\/sendotp(?:\/|\?|$)/i.test(String(url||'')); }        // отправка кода
-        function isOtpLogin(url){ return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(String(url||'')); }       // подтверждение кода (вход)
-        function isLoginPost(url){ return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(String(url||'')); }     // классический/Google
-        function isWishlistAdd(url){ return /\/jan\/wishlist\/add(?:\/|\?|$)/i.test(String(url||'')); }
+        function isOtpCreate(url){ return /\/otplogin\/account\/sendotpcreate(?:\/|\?|$)/i.test(String(url||'')); }
+        function isSendOtp(url){ return /\/otplogin\/account\/sendotp(?:\/|\?|$)/i.test(String(url||'')); }
+        function isOtpLogin(url){ return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(String(url||'')); }
+        function isLoginPost(url){ return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(String(url||'')); }
+        function getPath(u){ try { return new URL(u, location.origin).pathname; } catch { return String(u||''); } }
+        function isWishlistAdd(url){
+            const path = getPath(url).toLowerCase().replace(/\/+$/,'');
+            return path.endsWith('/wishlist/add');
+        }
+
+        /* ----- Wishlist ping ----- */
         function pingWishlist(src){
             const url = wishlistEventEndpoint + '?src=' + encodeURIComponent(src||'');
+            group('[wishlist] ping → ' + url);
             fetch(url, { credentials:'same-origin' })
                 .then(r=>r.json())
                 .then(data=>{
                     const list = Array.isArray(data?.events) ? data.events : [];
-                    if (!list.length) return;
+                    if (!list.length) { log('[wishlist] empty'); return; }
                     const layer = dl();
                     list.forEach(ev => { layer.push({ecommerce:null}); layer.push(ev); });
-                });
+                    group('[wishlist] pushed', list);
+                })
+                .catch(err => group('[wishlist] error', err));
         }
 
-        // -------- CART --------
+        /* ----- Cart ping ----- */
         function pingCart(originalRequestUrl){
             const url = cartEventEndpoint + '?src=' + encodeURIComponent(originalRequestUrl || '');
             group('[cart] ping → ' + url);
@@ -214,7 +217,7 @@ $containerCode = $block->getEmbeddedCode();
                 .catch(err => group('[cart] error', err));
         }
 
-        // -------- LEAD (OTP create) --------
+        /* ----- Lead (otp create) ----- */
         function handleOtpCreateResponse(respText, ok){
             if (!ok){ log('[otp-create] not OK'); return; }
             try{
@@ -227,7 +230,7 @@ $containerCode = $block->getEmbeddedCode();
             layer.push({ event:'generate_lead', ecommerce:{ currency:'UAH', value:0 } });
         }
 
-        // -------- LOGIN FLAG (приоритет Phone > Google) --------
+        /* ----- Login flag (Phone > Google) ----- */
         function setLoginFlag(method){
             try{
                 const cur = sessionStorage.getItem(LOGIN_KEY);
@@ -237,13 +240,9 @@ $containerCode = $block->getEmbeddedCode();
             }catch(e){}
         }
         function takeLoginFlag(){
-            try{
-                const v = sessionStorage.getItem(LOGIN_KEY);
-                sessionStorage.removeItem(LOGIN_KEY);
-                return v;
-            }catch(e){ return null; }
+            try{ const v = sessionStorage.getItem(LOGIN_KEY); sessionStorage.removeItem(LOGIN_KEY); return v; }
+            catch(e){ return null; }
         }
-
         function pushLogin(method){
             if (window.__gtmLoginPushed) return;
             window.__gtmLoginPushed = true;
@@ -252,6 +251,7 @@ $containerCode = $block->getEmbeddedCode();
             layer.push({ event:'login', ecommerce:{ method: method || 'Google' } });
         }
 
+        /* ----- fetch hook ----- */
         if (window.fetch){
             const originalFetch = window.fetch;
             window.fetch = function(input, init){
@@ -261,7 +261,8 @@ $containerCode = $block->getEmbeddedCode();
                 const _isSendOtp   = isSendOtp(url);
                 const _isOtpLogin  = isOtpLogin(url);
                 const _isLoginPost = isLoginPost(url);
-                if (_isCart || _isOtpCreate || _isSendOtp || _isOtpLogin || _isLoginPost) log('[fetch]', url);
+                const _isWishlist  = isWishlistAdd(url);
+                if (_isCart || _isOtpCreate || _isSendOtp || _isOtpLogin || _isLoginPost || _isWishlist) log('[fetch]', url);
 
                 return originalFetch(input, init).then(response => {
                     if (_isCart){
@@ -270,6 +271,10 @@ $containerCode = $block->getEmbeddedCode();
                     if (_isOtpCreate){
                         try{ response.clone().text().then(t => handleOtpCreateResponse(t, response.ok)).catch(() => handleOtpCreateResponse('', response.ok)); }
                         catch(e){ handleOtpCreateResponse('', response.ok); }
+                    }
+                    if (_isWishlist){
+                        try { response.clone().text().finally(() => pingWishlist(url)); }
+                        catch (e) { pingWishlist(url); }
                     }
                     if ((_isSendOtp || _isOtpLogin) && response && response.ok){
                         setLoginFlag('Phone');
@@ -283,18 +288,20 @@ $containerCode = $block->getEmbeddedCode();
             };
         }
 
+        /* ----- XHR hook ----- */
         if (window.XMLHttpRequest){
             const origOpen = XMLHttpRequest.prototype.open;
             const origSend = XMLHttpRequest.prototype.send;
 
             XMLHttpRequest.prototype.open = function(method, url){
-                this.__isCart      = isCart(url || '');
-                this.__isOtpCreate = isOtpCreate(url || '');
-                this.__isSendOtp   = isSendOtp(url || '');
-                this.__isOtpLogin  = isOtpLogin(url || '');
-                this.__isLoginPost = isLoginPost(url || '');
+                this.__isCart        = isCart(url || '');
+                this.__isOtpCreate   = isOtpCreate(url || '');
+                this.__isSendOtp     = isSendOtp(url || '');
+                this.__isOtpLogin    = isOtpLogin(url || '');
+                this.__isLoginPost   = isLoginPost(url || '');
+                this.__isWishlistAdd = isWishlistAdd(url || '');
                 this.__url = url || '';
-                if (this.__isCart || this.__isOtpCreate || this.__isSendOtp || this.__isOtpLogin || this.__isLoginPost){
+                if (this.__isCart || this.__isOtpCreate || this.__isSendOtp || this.__isOtpLogin || this.__isLoginPost || this.__isWishlistAdd){
                     log('[xhr open]', method, url);
                 }
                 return origOpen.apply(this, arguments);
@@ -303,8 +310,9 @@ $containerCode = $block->getEmbeddedCode();
             XMLHttpRequest.prototype.send = function(){
                 this.addEventListener('load', () => {
                     const ok = this.status >= 200 && this.status < 300;
-                    if (this.__isCart)      pingCart(this.__url);
-                    if (this.__isOtpCreate) handleOtpCreateResponse(String(this.responseText || ''), ok);
+                    if (this.__isCart)        pingCart(this.__url);
+                    if (this.__isOtpCreate)   handleOtpCreateResponse(String(this.responseText || ''), ok);
+                    if (this.__isWishlistAdd) pingWishlist(this.__url);
                     if ((this.__isSendOtp || this.__isOtpLogin) && ok) setLoginFlag('Phone');
                     if (this.__isLoginPost && ok){
                         const cur = sessionStorage.getItem(LOGIN_KEY);
@@ -315,18 +323,23 @@ $containerCode = $block->getEmbeddedCode();
             };
         }
 
-        if (!window.__gtmCartPingDone){
-            window.__gtmCartPingDone = true;
-            document.addEventListener('DOMContentLoaded', () => {
-                log('[init] initial cart ping');
+        /* ----- Initial pings after redirect (на новой странице) ----- */
+        if (!window.__gtmInitialPingsDone){
+            window.__gtmInitialPingsDone = true;
+            const doInitial = () => {
+                log('[init] initial pings');
                 try { pingCart(location.pathname + location.search); } catch(e){}
+                try { pingWishlist(location.pathname + location.search); } catch(e){}
 
                 const pending = takeLoginFlag();
                 if (pending){
                     group('[login] push after redirect', pending);
                     pushLogin(pending);
                 }
-            });
+            };
+
+            if (document.readyState !== 'loading') doInitial();
+            else document.addEventListener('DOMContentLoaded', doInitial, { once: true });
         }
     })();
 </script>
