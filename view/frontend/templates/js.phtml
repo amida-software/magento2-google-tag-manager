@@ -185,7 +185,7 @@ $containerCode = $block->getEmbeddedCode();
         function isSendOtp(url){ return /\/otplogin\/account\/sendotp(?:\/|\?|$)/i.test(String(url||'')); }        // отправка кода
         function isOtpLogin(url){ return /\/otplogin\/account\/otplogin(?:\/|\?|$)/i.test(String(url||'')); }       // подтверждение кода (вход)
         function isLoginPost(url){ return /\/customer\/account\/loginPost(?:\/|\?|$)/i.test(String(url||'')); }     // классический/Google
-        function isWishlistAdd(url){ return /\/wishlist\/add(?:\/|\?|$)/i.test(String(url||'')); }
+        function isWishlistAdd(url){ return /\/jan\/wishlist\/add(?:\/|\?|$)/i.test(String(url||'')); }
         function pingWishlist(src){
             const url = wishlistEventEndpoint + '?src=' + encodeURIComponent(src||'');
             fetch(url, { credentials:'same-origin' })
