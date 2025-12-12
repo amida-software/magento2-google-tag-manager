@@ -33,16 +33,6 @@ class Category extends Template
         $this->categoryProvider = $categoryProvider;
         $this->storeManager = $storeManager;
         $this->session = $session;
-
-        try {
-            $logger = new \Monolog\Logger('gtm');
-            $logger->pushHandler(new \Monolog\Handler\StreamHandler(BP . '/var/log/dataLayer.log', \Monolog\Logger::DEBUG));
-            $logger->info(__METHOD__, [
-                'fullAction'   => $context->getRequest()->getFullActionName(),
-                'nameInLayout' => $this->getNameInLayout(),
-                'isAjax'       => $context->getRequest()->isAjax(),
-            ]);
-        } catch (\Throwable $e) {}
     }
 
     public function getCurrentCategory()
@@ -55,20 +45,10 @@ class Category extends Template
 
     public function updateDataLayer($items, $currency, $totalValue)
     {
-        $logger = new \Monolog\Logger('gtm');
-        $streamHandler = new \Monolog\Handler\StreamHandler(BP . '/var/log/dataLayer.log', \Monolog\Logger::DEBUG);
-        $logger->pushHandler($streamHandler);
-        $logger->info(__METHOD__, [
-            'items_cnt' => is_array($items) ? count($items) : 0,
-            'currency'  => $currency,
-            'total'     => $totalValue
-        ]);
-
         $tm = $this->getParentBlock() ?: $this->getLayout()->getBlock('magepal_gtm_datalayer');
         $category = $this->getCurrentCategory();
 
         if (!$tm || !$category || empty($items)) {
-            $logger->info('Skip push', ['has_tm' => (bool)$tm, 'has_cat' => (bool)$category, 'has_items' => !empty($items)]);
             return;
         }
 
@@ -83,38 +63,28 @@ class Category extends Template
 
         if (method_exists($tm, 'addCustomDataLayerByEvent')) {
             $tm->addCustomDataLayerByEvent(DataLayerEvent::CATEGORY_PAGE_EVENT, $payload);
-            $logger->info('Pushed via addCustomDataLayerByEvent');
         } elseif (method_exists($tm, 'addCustomDataLayer')) {
             $tm->addCustomDataLayer($payload);
-            $logger->info('Pushed via addCustomDataLayer');
         } elseif (method_exists($tm, 'addVariable')) {
             $tm->addVariable('event', $payload['event']);
             $tm->addVariable('ecommerce', $payload['ecommerce']);
-            $logger->info('Pushed via addVariable');
         } else {
             $existing = (array)($tm->getData('custom_datalayer') ?? []);
             $tm->setData('custom_datalayer', array_merge($existing, [$payload]));
-            $logger->info('Pushed via setData(custom_datalayer)');
         }
     }
 
     protected function _prepareLayout()
     {
-        $logger = new \Monolog\Logger('gtm');
-        $logger->pushHandler(new \Monolog\Handler\StreamHandler(BP . '/var/log/dataLayer.log', \Monolog\Logger::DEBUG));
-
         try {
-            $logger->info(__METHOD__ . ' start', ['nameInLayout' => $this->getNameInLayout()]);
             $items = $this->getItemsForCategory();
             if (empty($items)) {
-                $logger->info('No items in session data_layer_category_list');
                 return parent::_prepareLayout();
             }
             $currency   = $this->getCurrencyName();
             $totalValue = $this->calculateTotalValue($items);
             $this->updateDataLayer($items, $currency, $totalValue);
         } catch (\Throwable $e) {
-            $logger->error('Exception: ' . $e->getMessage());
         }
 
         return parent::_prepareLayout();

@@ -152,10 +152,8 @@ $containerCode = $block->getEmbeddedCode();
         const DEBUG     = (localStorage.getItem('gtmDebug') === '1');
         const LOGIN_KEY = '__gtmLoginPending';
 
-        function log(){ if (DEBUG) try{ console.log('[GTM]', ...arguments); }catch(e){} }
         function group(title, payload){
             if (!DEBUG) return;
-            try{ console.groupCollapsed(title); if (payload!==undefined) console.log(payload); console.groupEnd(); }catch(e){}
         }
         function dl(){ window[dataLayerName] = window[dataLayerName] || []; return window[dataLayerName]; }
 
@@ -193,7 +191,7 @@ $containerCode = $block->getEmbeddedCode();
                 .then(r=>r.json())
                 .then(data=>{
                     const list = Array.isArray(data?.events) ? data.events : [];
-                    if (!list.length) { log('[wishlist] empty'); return; }
+                    if (!list.length) { return; }
                     const layer = dl();
                     list.forEach(ev => { layer.push({ecommerce:null}); layer.push(ev); });
                     group('[wishlist] pushed', list);
@@ -208,7 +206,7 @@ $containerCode = $block->getEmbeddedCode();
             fetch(url, { credentials:'same-origin' })
                 .then(r => r.json())
                 .then(payload => {
-                    if (!payload || !payload.event){ log('[cart] skip'); return; }
+                    if (!payload || !payload.event){ return; }
                     group('[cart] payload', payload);
                     const layer = dl();
                     layer.push({ ecommerce: null });
@@ -219,7 +217,7 @@ $containerCode = $block->getEmbeddedCode();
 
         /* ----- Lead (otp create) ----- */
         function handleOtpCreateResponse(respText, ok){
-            if (!ok){ log('[otp-create] not OK'); return; }
+            if (!ok){ return; }
             try{
                 const j = JSON.parse(respText || '{}');
                 if (j && (j.success === false || j.error)){ group('[otp-create] error', j); return; }
@@ -262,7 +260,7 @@ $containerCode = $block->getEmbeddedCode();
                 const _isOtpLogin  = isOtpLogin(url);
                 const _isLoginPost = isLoginPost(url);
                 const _isWishlist  = isWishlistAdd(url);
-                if (_isCart || _isOtpCreate || _isSendOtp || _isOtpLogin || _isLoginPost || _isWishlist) log('[fetch]', url);
+                if (_isCart || _isOtpCreate || _isSendOtp || _isOtpLogin || _isLoginPost || _isWishlist) {}
 
                 return originalFetch(input, init).then(response => {
                     if (_isCart){
@@ -302,7 +300,6 @@ $containerCode = $block->getEmbeddedCode();
                 this.__isWishlistAdd = isWishlistAdd(url || '');
                 this.__url = url || '';
                 if (this.__isCart || this.__isOtpCreate || this.__isSendOtp || this.__isOtpLogin || this.__isLoginPost || this.__isWishlistAdd){
-                    log('[xhr open]', method, url);
                 }
                 return origOpen.apply(this, arguments);
             };
@@ -327,7 +324,6 @@ $containerCode = $block->getEmbeddedCode();
         if (!window.__gtmInitialPingsDone){
             window.__gtmInitialPingsDone = true;
             const doInitial = () => {
-                log('[init] initial pings');
                 try { pingCart(location.pathname + location.search); } catch(e){}
                 try { pingWishlist(location.pathname + location.search); } catch(e){}
 

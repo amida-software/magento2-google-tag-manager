@@ -18,18 +18,12 @@ class CategoryListEventAfterHtml
 
     public function afterToHtml(\Magento\Framework\View\Element\AbstractBlock $subject, $result)
     {
-        $log  = new \Monolog\Logger('comp');
-        $log->pushHandler(new \Monolog\Handler\StreamHandler(BP.'/var/log/dataLayer.log', \Monolog\Logger::DEBUG));
-
         $fan   = method_exists($subject,'getRequest') ? $subject->getRequest()->getFullActionName() : null;
         $name  = method_exists($subject,'getNameInLayout') ? (string)$subject->getNameInLayout() : '';
         $class = get_class($subject);
         $tmpl  = method_exists($subject,'getTemplate') ? (string)$subject->getTemplate() : '';
 
-        $log->info('CategoryListEventAfterHtml::ENTRY', compact('fan','name','class','tmpl'));
-
         if ($fan !== 'catalog_category_view') {
-            $log->info('EXIT not category page');
             return $result;
         }
 
@@ -47,20 +41,13 @@ class CategoryListEventAfterHtml
             method_exists($subject, 'getLoadedProductCollection');
 
         if (!$isList) {
-            $log->info('EXIT not list', ['name'=>$name,'class'=>$class]);
             return $result;
         }
 
         $category = $this->registry->registry('current_category');
         $items    = $this->session->getData('data_layer_category_list');
 
-        $log->info('STATE', [
-            'hasCategory' => (bool)$category,
-            'itemsCount'  => is_array($items) ? count($items) : null,
-        ]);
-
         if (!$category || empty($items) || !is_array($items)) {
-            $log->info('EXIT no data');
             return $result;
         }
 
@@ -77,8 +64,6 @@ class CategoryListEventAfterHtml
         ];
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
         $script = '<script>window.dataLayer=window.dataLayer||[];window.dataLayer.push('.$json.');</script>';
-
-        $log->info('PUSHED CATEGORY_PAGE_EVENT', ['bytes'=>strlen($script), 'name'=>$name, 'class'=>$class]);
 
         return $result . $script;
     }
